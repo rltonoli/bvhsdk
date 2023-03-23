@@ -166,8 +166,6 @@ class Animation:
 #            for triangle in surface.headmesh:
 #                vertices = [[vert.getPosition(self,0)[0],vert.getPosition(self,0)[1],vert.getPosition(self,0)[2]] for vert in triangle]
 
-
-
     def PlotAnimation(self, surface=None):
         if surface:
             bones = []
@@ -186,7 +184,7 @@ class Animation:
         raise Exception('This method is no longer available, please use getBones()')
 
 
-    def getBones(self, frame = 0, bonesPositions=[], joint=None):
+    def getBones(self, frame = 0, bonesPositions=[], joint=None, include_endsite=False):
         """
         Return the bones to plot
         """
@@ -197,11 +195,11 @@ class Animation:
             pp = joint.parent.getPosition(frame)
             cp = joint.getPosition(frame)
             bonesPositions.append([pp[0], pp[1], pp[2], cp[0], cp[1], cp[2]])
-            if len(joint.endsite)>0:
+            if len(joint.endsite)>0 and include_endsite:
                 es = joint.getEndSitePosition(frame)
                 bonesPositions.append([cp[0], cp[1], cp[2], es[0], es[1], es[2]])
         for child in joint.children:
-            self.getBones(frame,bonesPositions,child)
+            self.getBones(frame,bonesPositions,child, include_endsite)
         if joint == self.root:
             return np.asarray(bonesPositions)
 
