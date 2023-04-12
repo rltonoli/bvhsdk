@@ -570,6 +570,8 @@ class Joints:
         return mathutils.eulerFromMatrix(self.getGlobalTransform(frame, includeBaseRotation), self.order)
 
     def getLocalTranslation(self, frame=0):
+        if self.n_channels == 3:
+            return self.offset
         try:
             return self.translation[frame]
         except:

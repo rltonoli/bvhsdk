@@ -170,9 +170,11 @@ def GetBVHDataFromFile(path, skipmotion=False):
                     flagEndSite = False
 
                 elif (line.find("CHANNELS")) >= 0:
-                    lastJoint.n_channels = int(line[line.find("CHANNELS")+9])
-                    if lastJoint.n_channels != 6:
-                        print("Number of channels must be 6")
+                    # TODO: Improve this part
+                    aux = line.replace('\t','').replace('\n','').split(" ")
+                    lastJoint.n_channels = int(aux[1])
+                    if lastJoint.n_channels != 3 and lastJoint.n_channels != 6:
+                        print("Number of channels must be 3 or 6")
                         raise ValueError
                     X = line.find("Xrotation")
                     Y = line.find("Yrotation")
@@ -198,11 +200,13 @@ def GetBVHDataFromFile(path, skipmotion=False):
                     pass
             elif flagMotionDataBegin and not skipmotion:
                 line = [float(item) for item in line.replace('\n', '').split(' ') if item]
-                for i, joint in enumerate(bvhfile.getlistofjoints()):
-                    joint.translation[frame] = np.asarray(line[i*6:i*6+3],
-                                                          float)
-                    joint.rotation[frame] = np.asarray(line[i*6+3:i*6+6],
-                                                       float)
+                i = 0
+                for joint in bvhfile.getlistofjoints():
+                    if joint.n_channels == 6:
+                        joint.translation[frame] = np.asarray(line[i:i+3], float)
+                        i+=3
+                    joint.rotation[frame] = np.asarray(line[i:i+3], float)
+                    i+=3
                 frame = frame + 1
 
     # Check channels' order
