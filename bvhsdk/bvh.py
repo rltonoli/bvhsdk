@@ -172,6 +172,7 @@ def GetBVHDataFromFile(path, skipmotion=False):
                 elif (line.find("CHANNELS")) >= 0:
                     # TODO: Improve this part
                     aux = line.replace('\t','').replace('\n','').split(" ")
+                    aux = [item for item in aux if item]
                     lastJoint.n_channels = int(aux[1])
                     if lastJoint.n_channels != 3 and lastJoint.n_channels != 6:
                         print("Number of channels must be 3 or 6")

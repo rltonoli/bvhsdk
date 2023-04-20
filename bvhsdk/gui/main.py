@@ -12,6 +12,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as matplotanim
+import matplotlib.gridspec as gridspec
 from matplotlib.widgets import Button, TextBox
 from .. import anim
 import time
@@ -160,5 +161,55 @@ class GUIPlayer():
         return self.lines
     
 
-
+def showinfo(animation):
+    assert type(animation) == anim.Animation
+    gui = GUIShowInfo(animation)
+    return gui
     
+class GUIShowInfo():
+
+
+    def __init__(self, animation):
+            self.animation = animation
+            
+            #fig, axs = plt.figure(3, 3, figsize=(12,8))
+            fig = plt.figure(figsize=(12,8), tight_layout=True)
+            gs = gridspec.GridSpec(3, 3, figure=fig)
+            
+
+            positions = np.empty(shape=(len(animation.getlistofjoints()), 3))
+            offsets = np.empty(shape=(len(animation.getlistofjoints()), 3))
+            for i, joint in enumerate(animation.getlistofjoints()):
+                positions[i] = joint.getPosition(frame = 0)
+                offsets[i] = joint.offset
+
+
+            axs = []
+            lab = {0: 'X axis', 1: 'Y axis', 2: 'Z axis'}
+            for i in range(3):
+                xyz = [[0,1], [1,2], [0,2]][i]
+                axs.append(fig.add_subplot(gs[i, 1]))
+                axs[-1].scatter(positions[:,xyz[0]], positions[:,xyz[1]], c='r', marker='o')
+                axs[-1].set_aspect('equal')
+                axs[-1].set_xlabel(lab[xyz[0]])
+                axs[-1].set_ylabel(lab[xyz[1]])
+
+            axs = []
+            for i in range(3):
+                xyz = [[0,1], [1,2], [0,2]][i]
+                axs.append(fig.add_subplot(gs[i, 2]))
+                axs[-1].scatter(offsets[:,xyz[0]], positions[:,xyz[1]], c='r', marker='o')
+                axs[-1].set_aspect('equal')
+                axs[-1].set_xlabel(lab[xyz[0]])
+                axs[-1].set_ylabel(lab[xyz[1]])
+
+            axs.append(fig.add_subplot(gs[:, 0]))
+            for i, joint in enumerate(animation.root.printHierarchy()):
+                axs[-1].text(0, -i*0.1, str(i) + " " + joint, fontsize=10)
+            axs[-1].set_ylim(-len(animation.getlistofjoints())*0.1, 0.1)
+            axs[-1].set_axis_off()
+
+
+            plt.show()
+
+            

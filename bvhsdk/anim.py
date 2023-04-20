@@ -846,7 +846,7 @@ class Joints:
         return matrix
 
 
-    def printHierarchy(self, hierarchy=[]):
+    def printHierarchy(self, hierarchy=[], endsite=False):
         """
         Print hierarchy below self
 
@@ -859,13 +859,13 @@ class Joints:
         hierarchy.append(str.format("%s%s %s" % (' '*2*int(self.depth),self.name, self.offset)))
         #print("%s%s %s" % (' '*2*int(self.depth),self.name, self.offset))
         try:
-            if len(self.endsite)>0:
+            if len(self.endsite)>0 and endsite:
                 hierarchy.append("%s%s %s" % (' '*2*(int(self.depth+1)),"End Site", self.endsite))
 #                print("%s%s %s" % (' '*2*(int(self.depth+1)),"End Site", self.endsite))
         except:
             pass
         for child in self.children:
-            child.printHierarchy(hierarchy)
+            child.printHierarchy(hierarchy, endsite=False)
         if flag:
             return hierarchy
 
