@@ -174,19 +174,17 @@ def GetBVHDataFromFile(path, skipmotion=False):
                     aux = line.replace('\t','').replace('\n','').split(" ")
                     aux = [item for item in aux if item]
                     lastJoint.n_channels = int(aux[1])
+                    lastJoint.channels = {key: value for key, value in zip(aux[2:], np.arange(lastJoint.n_channels))}
                     if lastJoint.n_channels != 3 and lastJoint.n_channels != 6:
                         print("Number of channels must be 3 or 6")
-                        raise ValueError
-                    X = line.find("Xrotation")
-                    Y = line.find("Yrotation")
-                    Z = line.find("Zrotation")
-                    if Z < X and X < Y:
-                        lastJoint.order = "ZXY"
-                    elif X < Y and Y < Z:
-                        lastJoint.order = "XYZ"
+                        raise NotImplementedError
+                    X, Y, Z = lastJoint.channels["Xrotation"], lastJoint.channels["Yrotation"], lastJoint.channels["Zrotation"]
+                    if Z < X and X < Y: lastJoint.order = "ZXY"
+                    elif X < Y and Y < Z: lastJoint.order = "XYZ"
                     else:
                         lastJoint.order("XYZ")
                         print("Invalid Channels order. XYZ chosen.")
+                        raise NotImplementedError
 
                 elif (line.find("Frames")) >= 0:
                     bvhfile.frames = int(line[8:])
@@ -200,15 +198,18 @@ def GetBVHDataFromFile(path, skipmotion=False):
                     # Lines only with { and } pass through here
                     pass
             elif flagMotionDataBegin and not skipmotion:
+                if frame >= bvhfile.frames:
+                    print("WARNING: Number of frames in file is different from declared in file.")
+                    break
                 line = [float(item) for item in line.replace('\n', '').split(' ') if item]
                 i = 0
                 for joint in bvhfile.getlistofjoints():
-                    if joint.n_channels == 6:
-                        joint.translation[frame] = np.asarray(line[i:i+3], float)
-                        i+=3
-                    joint.rotation[frame] = np.asarray(line[i:i+3], float)
-                    i+=3
-                frame = frame + 1
+                    values = line[i:i+len(joint.channels)]
+                    joint.rotation[frame] = np.array( [values[joint.channels['Xrotation']], values[joint.channels['Yrotation']], values[joint.channels['Zrotation']]] )
+                    if len(joint.channels) == 6:
+                        joint.translation[frame] = np.array( [values[joint.channels['Xposition']], values[joint.channels['Yposition']], values[joint.channels['Zposition']]] )
+                    i+=len(joint.channels)
+                frame += 1
 
     # Check channels' order
     if not skipmotion:
