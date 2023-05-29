@@ -211,12 +211,6 @@ def GetBVHDataFromFile(path, skipmotion=False):
                     i+=len(joint.channels)
                 frame += 1
 
-    # Check channels' order
-    if not skipmotion:
-        for joint in bvhfile.getlistofjoints():
-            if joint.order == "ZXY":
-                # joint.rotation = joint.rotation[:, [2, 0, 1]]
-                joint.rotation = joint.rotation[:, [1, 2, 0]]
 
     return bvhfile
 
@@ -263,11 +257,11 @@ def GetPositions(joint, frame=0, parentTransform=[], surfaceinfo=None, calibrati
     parentTransform=[]
 
 
-def ReadFile(path, surfaceinfo=None):
+def ReadFile(path, surfaceinfo=None, skipmotion=False):
     """
     Read BVH file, create animation a joints instances and compute joint positions
     """
-    animation = GetBVHDataFromFile(path)
+    animation = GetBVHDataFromFile(path, skipmotion=skipmotion)
     animation.surfaceinfo = surfaceinfo
 
     return animation
