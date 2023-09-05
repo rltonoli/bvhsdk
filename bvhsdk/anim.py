@@ -246,6 +246,39 @@ class Animation:
                 joint.translation = np.asarray([joint.translation[0] for _ in range(frames)])
                 joint.rotation = np.asarray([joint.rotation[0] for _ in range(frames)])
 
+    def insertFrame(self, index, rotation=None, translation=None):
+        """
+        Insert a frame in the animation at the index position
+        """
+        if index == -1:
+            index = self.frames
+        else:
+            if index > self.frames or index < 0:
+                print('Index out of range. Please select an index between 0 and %i' % self.frames)
+                return None
+        if rotation is None:
+            rotation = np.zeros(shape=(1,3))
+        self.frames = self.frames + 1
+        for joint in self.getlistofjoints():
+            t = translation if translation is not None else joint.offset
+            joint.translation = np.insert(joint.translation, index, t, axis=0)
+            joint.rotation = np.insert(joint.rotation, index, rotation, axis=0)
+
+    def removeFrame(self, index):
+        """
+        Remove a frame in the animation at the index position
+        """
+        if index == -1:
+            index = self.frames
+        else:
+            if index > self.frames or index < 0:
+                print('Index out of range. Please select an index between 0 and %i' % self.frames)
+                return None
+        self.frames = self.frames - 1
+        for joint in self.getlistofjoints():
+            joint.translation = np.delete(joint.translation, index, axis=0)
+            joint.rotation = np.delete(joint.rotation, index, axis=0)
+
 
 
     def downSample(self, target_fps):
