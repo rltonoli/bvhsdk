@@ -1,0 +1,31 @@
+[build-system]
+requires = ["flit_core >= 3.8, <4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "bvhsdk"
+version = "0.1.0"
+authors = [
+  { name="Rodolfo Luis Tonoli", email="rltonoli@gmail.com" },
+]
+description = "A package that handles bvh files in python. You can read, write, and modify your bvh files among other useful tools."
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "matplotlib >= 3.5.3",
+    "numpy >= 1.21.6",
+]
+
+[project.optional-dependencies]
+doc = [
+    "sphinx~= 4.2.0",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/rltonoli/bvhsdk"
+"Bug Tracker" = "https://github.com/rltonoli/bvhsdk/issues"
