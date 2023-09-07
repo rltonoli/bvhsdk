@@ -24,7 +24,6 @@ dependencies = [
 [project.optional-dependencies]
 doc = [
     "sphinx >= 7",
-    "myst-parser",
     "furo",
 ]
 
