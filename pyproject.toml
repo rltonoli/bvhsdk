@@ -25,7 +25,7 @@ dependencies = [
 doc = [
     "sphinx >= 7",
     "furo",
-    "sphinx_rtd_theme",
+    "sphinx-rtd-theme",
 ]
 
 [project.urls]
