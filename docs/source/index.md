@@ -9,7 +9,7 @@
 % more on sphinx and autodoc https://www.youtube.com/watch?v=BWIrhgCAae0
 
 
-```{include} ..\..\README.md
+```{include} README.md
 :relative-images:
 ```
 
