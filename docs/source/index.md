@@ -3,6 +3,7 @@
 % You can adapt this file completely to your liking, but it should at least
 % contain the root `toctree` directive.
 %
+% run usin "sphinx-autobuild docs/source docs/build/html"
 % based on the tutorial available at https://www.youtube.com/watch?v=qRSb299awB0
 % other useful resources
 % how to structure your code https://www.youtube.com/watch?v=v6tALyc4C10
@@ -11,8 +12,8 @@
 
 ![bvhsdk logo](logo.png)
 
-- **Documentation:** https://bvhsdk.readthedocs.io/
-- **Github:** https://github.com/rltonoli/bvhsdk
+- **Documentation:** [https://bvhsdk.readthedocs.io/](https://bvhsdk.readthedocs.io/)
+- **Github:** [https://github.com/rltonoli/bvhsdk](https://github.com/rltonoli/bvhsdk)
 
 ## Description:
 bvhsdk is a small but versatile Python library designed for the management of BVH (Biovision Hierarchy) files commonly used in animation and motion capture. This library offers a comprehensive set of tools to read, write, and extract valuable information from BVH animations. Whether you're a computer graphics artist, animator, researcher, or developer, bvhsdk simplifies your BVH file handling needs.
@@ -89,6 +90,8 @@ If you find this library useful, please cite this mater's thesis:
 :maxdepth: 6
 
 usage
+
+example
 
 bvhsdk
 
