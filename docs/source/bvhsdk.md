@@ -61,23 +61,25 @@
    :show-inheritance:
 ```
 
-% egocentriccoord module
-% -----------------------------
-%
-% .. automodule:: bvhsdk.egocentriccoord
-%    :members:
-%    :undoc-members:
-%    :show-inheritance:
-%
-% surface
-% ---------------------
-%
-% .. automodule:: bvhsdk.surface
-%    :members:
-%    :undoc-members:
-%    :show-inheritance:
-%
-%
+# egocentric
+
+```{eval-rst}
+.. automodule:: bvhsdk.egocentriccoord
+   :members:
+   :undoc-members:
+   :show-inheritance:
+```
+
+# surface
+
+```{eval-rst}
+.. automodule:: bvhsdk.surface
+   :members:
+   :undoc-members:
+   :show-inheritance:
+```
+
+
 % Module contents
 % ---------------
 %
