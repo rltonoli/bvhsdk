@@ -56,7 +56,7 @@ Want to contribute? Feel free to create pull requests, issues or email. Here are
 
 ## Contact
 
-If you have any questions or suggestions, please contact us via: r105652@dac.unicamp.br
+If you have any questions or suggestions, please contact us via: rltonoli@gmail.com
 
 ## Citation
 

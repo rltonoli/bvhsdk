@@ -3,11 +3,17 @@
 % You can adapt this file completely to your liking, but it should at least
 % contain the root `toctree` directive.
 %
-% run usin "sphinx-autobuild docs/source docs/build/html"
-% based on the tutorial available at https://www.youtube.com/watch?v=qRSb299awB0
-% other useful resources
-% how to structure your code https://www.youtube.com/watch?v=v6tALyc4C10
-% more on sphinx and autodoc https://www.youtube.com/watch?v=BWIrhgCAae0
+% Based on the tutorial by Juan Luis Cano Rodríguez "Document Your Scientific Project With Markdown, Sphinx, and Read the Docs"
+% Available at https://www.youtube.com/watch?v=qRSb299awB0
+%
+% To setup your environment follow the steps on the tutorial
+% 
+% To update the documentation, run the following command from the root folder in the python terminal:
+% sphinx-autobuild docs/source docs/build/html
+%
+% other useful resources:
+% How to structure your code https://www.youtube.com/watch?v=v6tALyc4C10
+% More on sphinx and autodoc https://www.youtube.com/watch?v=BWIrhgCAae0
 
 
 ![bvhsdk logo](logo.png)
@@ -42,7 +48,7 @@ bvhsdk is a small but versatile Python library designed for the management of BV
 
 - Tonoli, R. L., Marques, L. B. D. M. M., Ueda, L. H., & Costa, P. P. D. (2023, September). Gesture Generation with Diffusion Models Aided by Speech Activity Information. In GENEA: Generation and Evaluation of Non-verbal Behaviour for Embodied Agents Challenge 2023.
 
-- Tonoli, R. L. (2019). Motion retargeting preserving spatial relationship: Transferência de movimentos preservando relação espacial (DISSERTAÇÃO Mestre em Engenharia Elétrica). Campinas, SP.
+- Tonoli, R. L. (2019). Motion retargeting preserving spatial relationship: Transferência de movimentos preservando relação espacial (Dissertação Mestre em Engenharia Elétrica). Campinas, SP.
 
 - Tonoli, R. L., Costa, P. D. P., & De Martino, J. M. Signing Avatar in Virtual Reality: An Intelligibility Study.
 
@@ -68,11 +74,11 @@ Want to contribute? Feel free to create pull requests, issues or email. Here are
 
 ## Contact
 
-If you have any questions or suggestions, please contact us via: r105652@dac.unicamp.br
+If you have any questions or suggestions, please contact us via: rltonoli@gmail.com
 
 ## Citation
 
-If you find this library useful, please cite this mater's thesis:
+If you find this library useful, please cite this master's thesis:
 
 ```
 @mastersthesis{tonoli2019motion,

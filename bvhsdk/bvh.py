@@ -27,7 +27,8 @@ def WriteBVH(animation, path, name='_export', frametime = 0.00833333, refTPose =
     :type writeTranslation: bool
     :param writeTranslation: If True, write translations for every joint. If False, only write translation for the root joint
     """
-    path = pathjoin(path, name)
+    if name:
+        path = pathjoin(path, name)
     endsiteflag = False
     depth = 0
     with open(str.format("%s.bvh" % path), "w") as file:
