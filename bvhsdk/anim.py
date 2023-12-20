@@ -13,12 +13,18 @@ class Animation:
         self.frametime = None
 
     def printlist(self):
+        """
+        Calls Animation.gestlistofjoints() and prints the name of each joint
+        """
         for joint in self.getlistofjoints():
             print(joint.name)
 
     def getlistofjoints(self):
         """
-        Get list of joints in the animation
+        Get list of joints in the animation in a Depth First Search order.
+
+        :returns: List of joints.
+        :rtype: List[anim.Joints]
         """
         if not self.listofjoints:
             self.listofjoints = self.__auxgetlist(None, [])
@@ -26,9 +32,16 @@ class Animation:
 
     def __auxgetlist(self, joint=None, listofjoints=[], skip=[]):
         """
-        Create and return list of joints in the animation
+        Create and return list of joints in the animation object recursively.
 
-        skip: list of joint names to not include them and their children in the list.
+        :param str joint: anim.Joints object to start the search. If None, start from the root.
+
+        :param list listofjoints: List of joints to be returned.
+
+        :param list skip: List of joint names to not include them and their children in the list.
+        
+        :returns: List of joints.
+        :rtype: List[anim.Joints]
         """
         if not joint:
             joint = self.root
@@ -51,7 +64,10 @@ class Animation:
 
     def RootReferences(self):
         """
-        Get references points for the root
+        Get references points for the root. Used to calculate the egocentric coordinates (*).
+
+        :returns: List of root joint's position projected on the XY plane normalized by the root's height in the first frame; list of the root's height normalized by the root's height in the first frame.
+        :rtype: List[float, float], List[float]
         """
         root = self.root
         self.rootNormalizedReferencePoint = [[root.position[frame][0]/root.position[0][2], root.position[frame][1]/root.position[0][2]] for frame in range(len(root.position))]
@@ -60,11 +76,19 @@ class Animation:
 
     def getJoint(self, jointname):
         """
-        Find the joint with jointname in the animation hierarchy
+        Find a joint in the animation by its name.
+
+        :param str jointname: Name of the joint to be found.
+
+        :returns: Joint object.
+        :rtype: anim.Joints
         """
         return self.root.getByName(jointname)
 
     def __erasepositions(self):
+        """
+        Erase all global position and orientation information from the joints. Note that it will note erase the local rotation and translation information, contained in the original BVH file.
+        """
         for joint in self.getlistofjoints():
             joint.position=[]
             joint.orientation=[]
@@ -72,14 +96,11 @@ class Animation:
 
     def checkExtraRoot(self):
         """
-        O esqueleto da Talita exportado em bvh pelo MotionBuilder possui uma
-        junta root extra chamada 'Talita' que atrapalha o algoritmo e precisa
-        ser removida. Ela não foi removida durante a exportação pois as
-        distâncias das juntas (tamanho dos ossos) são normalizados.
-        Aqui verifico se a junta root do bvh possui um dos nomes válidos.
+        Legacy function, may be removed in the future. Some BVH files have an extra root joint that is not on the base of the spine, some times it is on the floor or behind the hips.
+        If you application assumes that the root joint is at the base of the spine, you may want to remove this extra joints.
+        Remebember to also recompute the global positions and orientations of the "new" root joint after removing the extra root joint.
+        This function used the name of the desired root joint defined in skeletonmap.SkeletonMap to check it and set it as the root of the animation.
         """
-        # TODO: Função obsoleta. O usuário tem que se certificar que não existe juntas indesejadas
-        # REMOVER
         if not skeletonmap.isroot(self.root.name):
             if not self.root.children:
                 print('The animation seems to have an extra root joint without a child joint.')
@@ -94,7 +115,8 @@ class Animation:
 
     def RecalculatePositions(self):
         """
-        Work in progress
+        Legacy function, may be removed in the future. It used to recalculate the global positions and orientations of the joints based on the local rotations and translations for all frames.
+        It used the deprecated function bvh.GetPositions() to do so.
         """
         self.__erasepositions()
         start = time.time()
@@ -111,7 +133,8 @@ class Animation:
 
     def checkPose(self):
         """
-        Check the first frame of the animation for a valid T Pose, that is,
+        Legacy function, may be removed in the future. 
+        Check the first frame of the animation for a valid T Pose, that is, 
         hips facing the positive direction of the Z axis, the arms parallel to
         the X axis (left arm along positive X) and standing in the positive
         direction of Y.
@@ -140,9 +163,11 @@ class Animation:
                 #root.rotation=np.asarray([[0,0,0] for _ in range(root.rotation.shape[0])],dtype='float')
                 self.RecalculatePositions()
 
-    def PlotPose(self, frame=0, surface=None):
+    def PlotPose(self, 
+                 frame=0, 
+                 surface=None):
         """
-        Plot the pose in the frame
+        Legacy function, a similar version should be available in bvhsdk.plotanimation.
         """
         if not surface:
             totaljoints = len(self.getlistofjoints())
@@ -166,7 +191,11 @@ class Animation:
 #            for triangle in surface.headmesh:
 #                vertices = [[vert.getPosition(self,0)[0],vert.getPosition(self,0)[1],vert.getPosition(self,0)[2]] for vert in triangle]
 
-    def PlotAnimation(self, surface=None):
+    def PlotAnimation(self, 
+                      surface=None):
+        """
+        Legacy function, a similar version should be available in bvhsdk.plotanimation.
+        """
         if surface:
             bones = []
             for frame in range(self.frames):
@@ -181,12 +210,32 @@ class Animation:
             plotanimation.PlotBVH(self)
 
     def getBonesInFrames(self, *args):
+        """
+        Legacy function, it will be removed in the next release.
+        """
         raise Exception('This method is no longer available, please use getBones()')
 
 
-    def getBones(self, frame = 0, bonesPositions=[], joint=None, include_endsite=False):
+    def getBones(self, 
+                 frame = 0, 
+                 bonesPositions=[], 
+                 joint=None, 
+                 include_endsite=False):
         """
-        Return the bones to plot
+        Create a list of bones useful for plotting the skeleton in the frame provided.
+        Each entry of the list contains six values, the first three are the coordinates of the parent joint and the last three are the coordinates of the child joint.
+        Can be thought as a list of lines, each line is a bone starting at p0 (first three values) end ending at p1 (last three values).
+
+        :param int frame: Frame to get the bones. Default is 0.
+
+        :param list bonesPositions: Not intended for user input. List of bones to be returned.
+
+        :param anim.Joints joint: Not intended for user input. Current joint being evaluated.
+
+        :param bool include_endsite: If True, include endsites in the list of bones. Default is False.
+
+        :returns: List of bones' begin and end.
+        :rtype: List[[float, float, float, float, float, float]]
         """
         if joint == None:
             bonesPositions = []
@@ -204,9 +253,11 @@ class Animation:
             return np.asarray(bonesPositions)
 
 
-    def plotPoseSurfFrame(self, surfaceinfo, frame=0):
+    def plotPoseSurfFrame(self, 
+                          surfaceinfo,
+                          frame=0):
         """
-        Plot pose in the frame with surface points
+        Legacy function, a similar version should be available in bvhsdk.plotanimation.
         """
         totaljoints = len(self.getlistofjoints())
         joints = np.zeros([totaljoints,3])
@@ -230,11 +281,15 @@ class Animation:
 
         plotanimation.PosePlotBonesSurface(joints, bones, np.asarray(surface))
 
-    def expandFrames(self, frames, set_empty=False):
+    def expandFrames(self,
+                     frames,
+                     set_empty=False):
         """
         Expand the number of frames of the animation by coping the rotation and translation of frame zero several times.
 
-        frames: desired amount of frames
+        :param int frames: Total of frames after expansion.
+
+        :param bool set_empty:  If False, stacks the rotation and translation of frame zero (default). If True, set the translation and rotation of the joints to empty arrays.
         """
         self.frames = frames
         if set_empty:
@@ -246,9 +301,18 @@ class Animation:
                 joint.translation = np.asarray([joint.translation[0] for _ in range(frames)])
                 joint.rotation = np.asarray([joint.rotation[0] for _ in range(frames)])
 
-    def insertFrame(self, index, rotation=None, translation=None):
+    def insertFrame(self, 
+                    index, 
+                    rotation=None, 
+                    translation=None):
         """
         Insert a frame in the animation at the index position
+
+        :param int index: Index position to insert the frame. If -1, insert at the end of the animation.
+
+        :param numpy.ndarray rotation: Rotation of the joints in the new frame. If None (default), set the rotation to zero.
+
+        :param numpy.ndarray translation: Local translation of the joints in the new frame. If None (default), use the same value store in anim.Joints.offset.
         """
         if index == -1:
             index = self.frames
@@ -267,6 +331,8 @@ class Animation:
     def removeFrame(self, index):
         """
         Remove a frame in the animation at the index position
+
+        :param int index: Index position to remove the frame. If -1, remove the last frame.
         """
         if index == -1:
             index = self.frames
@@ -281,7 +347,14 @@ class Animation:
 
 
 
-    def downSample(self, target_fps):
+    def downSample(self, 
+                   target_fps):
+        """
+        Downsample the animation to the target frame rate. If the target frame rate is higher than the current frame rate, it will return False and print a warning.
+        Useful for reducing the size of the animation file from 120 fps to 30 fps, for example.
+
+        :param int target_fps: Target frame rate.
+        """
         current_fps = np.round(1/self.frametime)
         if target_fps == current_fps:
             print('Animation is already at the target frame rate.')
@@ -306,7 +379,26 @@ class Animation:
 
 
 
-    def MLPreProcess(self, skipjoints=[], root_translation=False, root_rotation=False, local_rotation=False):
+    def MLPreProcess(self, 
+                     skipjoints=[],
+                     root_translation=False,
+                     root_rotation=False,
+                     local_rotation=False):
+        """
+        An example of how to preprocess the animation to be used in a machine learning algorithm.
+        Returns two numpy arrays with the global position and local rotation of each joint in each frame. The shape of the arrays are (number of joints, 3, number of frames).
+
+        :param list skipjoints: List of joints (and their children) to skip in the preprocessing. Default is [] and will account for every joint.
+
+        :param bool root_translation: If True, the root joint will be forced to the origin in **every frame**. Default is False.
+
+        :param bool root_rotation: If True, the root joint will be forced to have zero rotation in **every frame**. Default is False.
+
+        :param bool local_rotation: If True, the local rotation of each joint will be returned in a second array. Default is False.
+
+        :returns: Numpy array with the global position of each joint in each frame; Numpy array with the local rotation of each joint in each frame.
+        :rtype: numpy.ndarray; numpy.ndarray
+        """
         root_position = self.root.getGlobalTranslation(frame=0)
         list_of_joints = self.__auxgetlist(None, [], skip=skipjoints)
         dim1 = len(list_of_joints)  # Number of joints
@@ -333,22 +425,16 @@ class Animation:
             return np_array
         else:
             return np_array, np_array_rot
-        #if lowerbody is False:
-            #list_of_joints = [joint if ['leg', 'Leg', 'Foot', 'foot', 'Toe', 'toe'] not in ]
-        #np_array = numpy.empty()
-        #for joint in self.getlistofjoints():
-        #    if joint is self.root:
 
-
-        #TODO Include translation
 
 
 
 class Joints:
-#    listofjointsnames = []
-#    listofjoints = []
 
-    def __init__(self, name, depth=0, parent=None):
+    def __init__(self, 
+                 name, 
+                 depth=0, 
+                 parent=None):
         self.name = name
         self.depth = depth
         self.children = []
@@ -367,10 +453,10 @@ class Joints:
         self.tposetrans = []
         if self.parent:
             self.parent.addChild(self)
-        #variável para debbugar o retargeting
+        # Used for debuggin purposes
         self.frameswarning = []
 
-        #Check when it is needed to recompute
+        # Check when it is needed to recompute
         self.flagGlobalTransformComputed = None
         self.currentGlobalTransform = []
 
@@ -378,13 +464,16 @@ class Joints:
         for child in self.children:
             yield child
 
-    def getChildren(self, index=-1):
+    def getChildren(self,
+                    index=-1):
         """
         Returns a list of references to the childrens of the joint. If index is equal or bigger
         than 0, return the index-th child
 
-        :type index: int
-        :param index: Index-th child to be returned
+        :param int index: Index-th child to be returned
+
+        :returns: List of childrens of the joint if index is -1, otherwise return the index-th child
+        :rtype: List[anim.Joints] or anim.Joints
         """
         if not self.children:
 #            print('The joint %s does not have children.' % self.name)
@@ -403,19 +492,15 @@ class Joints:
             else:
                 return self.children
 
-    def getJointsBelow(self, first=True):
+    def getJointsBelow(self, 
+                       first=True):
         """
         Generator for all joints below the hierarchy
-        Parameters
-        ----------
-        first : bool, optional
-            Internal control, do not change. The default is True.
 
-        Yields
-        ------
-        Joint
-            joints below the hierarchy.
+        :param bool first: Internal control, do not change. Default is True.
 
+        :returns: Yields joints below the hierarchy.
+        :rtype: anim.Joints
         """
         for child in self:
             yield child
@@ -427,21 +512,33 @@ class Joints:
             self = self.parent
 
     def pathFromRootToJoint(self):
+        """
+        Generator of the path between the root and the joint.
+
+        Example: Given the subtree root, node1, node2, node3, node4, node5 and node6. node5.pathFromRootToJoint() will
+        yield the joints root, node1, node2, node3, node4 and node5.
+
+        :returns: Yields joints from the root to the current joint.
+        :rtype: anim.Joints
+        """
         # path = list(reversed([joint for joint in reversed(self)]))
         path = ([joint for joint in reversed(self)])[::-1]
         for joint in path:
             yield joint
         yield self
 
-    def pathFromDepthToJoint(self, depth=-1):
+    def pathFromDepthToJoint(self,
+                             depth=-1):
         """
         Generator of the path between the joint located depth nodes up the hierarchy to the joint.
 
-        Example: Given the subtree node1, node2, node3, node4, node5 and node6. node5.pathFromDepthToJoint(2) will
+        Example: Given the subtree root, node1, node2, node3, node4, node5 and node6. node5.pathFromDepthToJoint(2) will
         return the joints node3, node4 and node5.
 
-        :type depth: int
-        :param depth: Position above the current joint in the hierarchy
+        :param int depth: Position above the current joint in the hierarchy
+
+        :returns: Yields joints from the joint located depth nodes up the hierarchy to the current joint.
+        :rtype: anim.Joints
         """
         # path = list(reversed([joint for joint in reversed(self)]))
         path = ([joint for joint in reversed(self)])[::-1]
@@ -452,12 +549,19 @@ class Joints:
             yield joint
         yield self
 
-    def pathFromJointToJoint(self, parentjoint):
+    def pathFromJointToJoint(self,
+                             parentjoint):
         """
         Returns the kinematic path between a parentjoint up in the hierarchy to the
-        current joint. If they are not in the same kinematic path (same subtree), raises error
+        current joint. If they are not in the same kinematic path (same subtree), raises error. Note: Returns a list, not a generator.
 
-        Returns a list, not a generator!
+        Example: Given the subtree root, node1, node2, node3, node4, node5 and node6. node5.pathFromJointToJoint(node2) will
+        return the joints node2, node3, node4 and node5.
+
+        :param anim.Joints parentjoint: Joint to start the path
+
+        :returns: List of joints from the parentjoint to the current joint.
+        :rtype: List[anim.Joints]
         """
         path = []
         found = False
@@ -471,41 +575,66 @@ class Joints:
         return path
 
     def getRoot(self):
+        """
+        Returns the root of the hierarchy
+
+        :returns: Root of the hierarchy
+        :rtype: anim.Joints
+        """
         return [joint for joint in reversed(self)][-1]
 
-    def addChild(self, item):
+    def addChild(self,
+                 item):
         """
         Called after initialization of every joint except root
 
-        self: the parent joint to add child
-        item: the child joint initialized
+        :param anim.Joints items: Joint to be added as a child
         """
         item.parent = self
         self.children.append(item)
 
-    def addOffset(self, offset):
+    def addOffset(self, 
+                  offset):
+        """
+        Add the offset of the joint. This offset is the local translation of the joint from its parent joint defined at the header of the BVH files.
+
+        :param numpy.ndarray offset: Offset of the joint
+        """
         self.offset = offset
 
-    def addEndSite(self, endsite=None):
+    def addEndSite(self,
+                   endsite=None):
+        """
+        Add the endsite of the joint. The endsite is the local translation of the endsite from the current anim.Joints object defined at the header of the BVH files.
+
+        :param numpy.ndarray endsite: Endsite of the joint
+        """
         self.endsite = endsite
         self.endsiteposition = []
 
-    def __addBoneLength(self, bonelength):
+    def __addBoneLength(self,
+                        bonelength):
         """
         The BVH file format does not inform the length of the bone directly.
-        The length can be calculated using the offset of its child, but in the
-        case that the joint has multiple children, the first one is used.
+        The length can be calculated using the offset of its child. Note that, in the
+        case that the joint has multiple children, the first one is used. This is a huge assumption.
+
+        :param numpy.ndarray bonelength: Length of the bone
         """
         self.length = bonelength
 
-    def addPosition(self, pos, frame):
+    def addPosition(self,
+                    pos,
+                    frame):
         """
         In the first time, instantiate the global position variable of a joint.
-        Then fill in values at the frame provided
+        Then fill in values at the frame provided.
+        **Note:** manually changing the (global) position **does not** update the local rotation of the joint and it **will not** change the animation if saved to a BVH file.
+        The (global) position values stored in Joints.position only exists for easily accessing the position of the joint in the animation.
+        If you want to change the position of the joint, you need to compute and change its local rotation.
 
-        self: joint to fill position
-        pos: position of the joint in the frame
-        frame: current frame
+        :param numpy.ndarray pos: Position of the joint in the frame
+        :param int frame: Frame to add the position
         """
         if len(self.position)==0:
             totalframes = self.translation.shape[0]
@@ -514,26 +643,41 @@ class Joints:
                 self.endsiteposition = np.zeros([totalframes,3])
         self.position[frame,:] = pos.ravel()
 
-    def addOrientation(self, ori, frame):
+    def addOrientation(self,
+                       ori,
+                       frame):
         """
         In the first time, instantiate the global orientation variable of a joint.
-        Then fill in values at the frame provided
+        Then fill in values at the frame provided. Similar to Joints.addPosition().
 
-        self: joint to fill orientation
-        ori: orientation of the joint in the frame
-        frame: current frame
+        :param numpy.ndarray ori: Global orientation of an endeffector joint.
+        :param int frame: Frame to add the orientation
         """
         if len(self.orientation)==0:
             totalframes = self.translation.shape[0]
             self.orientation = np.zeros([totalframes,3])
         self.orientation[frame,:] = ori.ravel()
 
-    def addEndSitePosition(self, pos, frame):
+    def addEndSitePosition(self,
+                           pos,
+                           frame):
+        """
+        Add the position of the endsite of an endeffector joint.
+
+        :param numpy.ndarray pos: Position of the endsite of the joint in the frame
+        :param int frame: Frame to add the position
+        """
         self.endsiteposition[frame,:] = pos.ravel()
 
-    def getLocalTransform(self, frame=0):
+    def getLocalTransform(self,
+                          frame=0):
         """
-        Get joint local transform
+        Get joint 4x4 local transformation matrix at the specified frame.
+
+        :param int frame: Frame to get the local transformation matrix.
+
+        :returns: Local transformation matrix (4x4).
+        :rtype: numpy.ndarray
         """
         trans = self.getLocalTranslation(frame)
         rot = self.getLocalRotation(frame)
@@ -551,8 +695,11 @@ class Joints:
             transform = np.dot(transform, rotz)
         return transform
 
-    def getLocalTransformBaseRotation(self, frame):
-        #OBSOLETE
+    def getLocalTransformBaseRotation(self,
+                                      frame):
+        """
+        Deprecated. Please use getLocalTransform() instead. It should be removed in the next release.
+        """
         print('Do not use this function!')
         localRotMatrix = mathutils.expandShape3ToShape4(self.getRecalcRotationMatrix(frame))
         translation = mathutils.matrixTranslation(0, self.getLength(), 0)
@@ -561,15 +708,40 @@ class Joints:
         return None
 
     def __getCurrentGlobalTransform(self):
+        """
+        Auxiliary function to get the current global transformation matrix of the joint.
+
+        :returns: Current 4x4 global transformation matrix of the joint.
+        :rtype: numpy.ndarray
+        """
         return self.currentGlobalTransform
 
-    def __setCurrentGlobalTransform(self, globalTransform, frame):
+    def __setCurrentGlobalTransform(self,
+                                    globalTransform,
+                                    frame):
+        """
+        Sets the current global transformation matrix of the joint. Used to avoid recomputing the global transformation matrix of the joint for the current frame.
+        **Note:** This function does not update local rotation of the joint and it will not change the animation if saved to a BVH file.
+
+        :param numpy.ndarray globalTransform: 4x4 global transformation matrix of the joint.
+        :param int frame: Frame to set the global transformation matrix.
+        """
         self.flagGlobalTransformComputed = frame
         self.currentGlobalTransform = globalTransform
 
-    def getGlobalTransform(self, frame=0, includeBaseRotation=False):
+    def getGlobalTransform(self,
+                           frame=0,
+                           includeBaseRotation=False):
         """
-        Get joint global transform
+        Compute the 4x4 global transformation matrix of the joint at the specified frame.
+        This is the function to be used if you want to get the global rotation or (global) position of the joint.
+        If the global transformation matrix was already computed for the current frame, it will return it without recomputing.
+        
+        :param int frame: Frame to get the global transformation matrix.
+        :param bool includeBaseRotation: Deprecated parameter, should be removed from the next release. Default is False.
+
+        :returns: Global transformation matrix (4x4).
+        :rtype: numpy.ndarray
         """
         #if the global transform of this joint was already computed for this frame return it
         if self.flagGlobalTransformComputed != frame:
@@ -596,13 +768,43 @@ class Joints:
                 print('getGlobalTransform: Something is wrong. Pleas check this case')
         return self.__getCurrentGlobalTransform()
 
-    def getLocalRotation(self, frame=0):
+    def getLocalRotation(self,
+                         frame=0):
+        """
+        Get local rotation angles of the joint at the specified frame. Same as joint.rotation[frame].
+
+        :param int frame: Frame to get the local rotation angles.
+
+        :returns: Local rotation angles.
+        :rtype: numpy.ndarray
+        """
         return self.rotation[frame].copy()
 
-    def getGlobalRotation(self, frame=0,includeBaseRotation=False):
+    def getGlobalRotation(self,
+                          frame=0,
+                          includeBaseRotation=False):
+        """
+        Get global rotation angles (Euler angles) of the joint at the specified frame.
+        It first computes the global transformation matrix, then extracts the euler angles from it.
+
+        :param int frame: Frame to get the global rotation angles.
+        :param bool includeBaseRotation: Deprecated parameter, should be removed from the next release. Default is False.
+
+        :returns: Global rotation angles.
+        :rtype: numpy.ndarray
+        """
         return mathutils.eulerFromMatrix(self.getGlobalTransform(frame, includeBaseRotation), self.order)
 
-    def getLocalTranslation(self, frame=0):
+    def getLocalTranslation(self,
+                            frame=0):
+        """
+        Get local translation of the joint at the specified frame. Same as joint.translation[frame].
+
+        :param int frame: Frame to get the local translation.
+
+        :returns: Local rotation translation.
+        :rtype: numpy.ndarray
+        """
         if self.n_channels == 3:
             return self.offset
         try:
@@ -610,42 +812,51 @@ class Joints:
         except:
             return self.translation[0]
 
-    def getGlobalTranslation(self, frame=0):
+    def getGlobalTranslation(self,
+                             frame=0):
         """
-        Doesn't include base rotation
+        The same as Joints.getPosition().
+
+        :returns: Global translation (position).
+        :rtype: numpy.ndarray
         """
         transform = self.getGlobalTransform(frame)
         return np.asarray([transform[0,3],transform[1,3],transform[2,3]])
 
-    def getPosition(self, frame=0):
-        # return np.dot(self.getGlobalTransform(frame, False), [0,0,0,1])[:-1]
+    def getPosition(self,
+                    frame=0):
+        """
+        Computes the global position of the joint at the specified frame. It first computes the global transformation matrix, then extracts the position from it using the last column.
+
+        :param int frame: Frame to get the global position.
+        
+        :returns: Global position.
+        :rtype: numpy.ndarray
+        """
         return self.getGlobalTransform(frame, False)[:-1,-1]
 
-    def setLocalRotation(self, frame, rotation):
-        """
-        Outdated. Please use setLocalRotation() instead
+#    def setLocalRotation(self,
+#                         frame,
+#                         rotation):
+#        """
+#        Outdated. Please use setLocalRotation() instead
+#
+#        """
+#        print("setLocalRotation() is outdated. Please use setLocalRotation() instead")
+#        raise Exception
+#        #use self.setLocalRotation(frame=frame, rotation=rotation)
 
-        """
-        print("setLocalRotation() is outdated. Please use setLocalRotation() instead")
-        raise Exception
-        #use self.setLocalRotation(frame=frame, rotation=rotation)
 
-
-    def setLocalRotation(self, frame, rotation):
+    def setLocalRotation(self,
+                         frame,
+                         rotation):
         """
         Updates local rotation angles in the current frame and sets all global transform matrices down the hierarchy to
-        not reliable.
-        Parameters
-        ----------
-        frame : int
-            Current frame.
-        rotation : numpy.ndarray
-            Rotation angles.
+        not reliable. 
+        That is, the global transformation matrix of the current joint and all its children will be recomputed if Joints.GetGlobalTransform() is called.
 
-        Returns
-        -------
-        None.
-
+        :param int frame: Frame to update the rotation angles.
+        :param numpy.ndarray rotation: Rotation angles.
         """
         self.flagGlobalTransformComputed = None
         for joint in self.getJointsBelow():
@@ -654,18 +865,10 @@ class Joints:
 
     def setGlobalRotation(self, R, frame):
         """
-        Set the global rotation of the joint as the R array
+        Set the global rotation of the joint as the R array (rx, ry, rz rotations) and update the local rotation angles accordingly.
 
-         Parameters
-        ----------
-        R : numpy array
-            Size 3 vector containing the rotation over the x-, y- and z-axis
-
-        frame: int
-            Current frame
-
-        Returns
-        -------
+        :param numpy.ndarray R: Global rotation (rx, ry, rz).
+        :param int frame: Frame to update the rotation angles.
         """
         if type(R)!=np.ndarray:
             try:
@@ -688,20 +891,15 @@ class Joints:
         else:
             self.setLocalRotation(frame, R)
 
-    def RotateGlobal(self, R, frame):
+    def RotateGlobal(self, 
+                     R, 
+                     frame):
         """
-        Apply a global rotation of R on the joint
+        Rotates the joint by a rotation defined by the R array (rx, ry, rz rotations) and update the local rotation angles accordingly.
+        **Note that R represents a global rotation and not a rotation relative to the parent joint.**
 
-         Parameters
-        ----------
-        R : numpy array
-            Size 3 vector containing the rotation over the x-, y- and z-axis
-
-        frame: int
-            Current frame
-
-        Returns
-        -------
+        :param numpy.ndarray R: Global rotation (rx, ry, rz).
+        :param int frame: Frame to update the rotation angles.
         """
         if type(R)!=np.ndarray:
             try:
@@ -732,28 +930,32 @@ class Joints:
         newAngle, warning = mathutils.eulerFromMatrix(newLclRotationMat, self.order)
         self.setLocalRotation(frame, newAngle[:])
 
-    def setTranslation(self, frame, translation):
+    def setTranslation(self,
+                       frame,
+                       translation):
         """
         Updates translation values in the current frame and sets all global transform matrices down the hierarchy to
         not reliable.
-        Parameters
-        ----------
-        frame : int
-            Current frame.
-        translation : numpy.ndarray
-            Rotation angles.
-
-        Returns
-        -------
-        None.
-
+        That is, the global transformation matrix of the current joint and all its children will be recomputed if Joints.GetGlobalTransform() is called.
+        
+        :param int frame: Frame to update the translation.
+        :param numpy.ndarray translation: Translation values.
         """
         self.flagGlobalTransformComputed = None
         for joint in self.getJointsBelow():
             joint.flagGlobalTransformComputed = None
         self.translation[frame] = translation
 
-    def getEndSitePosition(self, frame=0):
+    def getEndSitePosition(self, 
+                           frame=0):
+        """
+        Returns the position of the EndSite of the joint at the specified frame if the joint has an EndSite (is an endeffector joint).
+
+        :param int frame: Frame to get the EndSite position.
+
+        :returns: EndSite position.
+        :rtype: numpy.ndarray
+        """
         if len(self.endsite) == 0:
             print('Unable to get joint\'s EndSite at readbvh.getEndSitePosition(joint, frame) because the joint %s does not have an EndSite.' % self.name)
             return None
@@ -762,12 +964,15 @@ class Joints:
         # return np.dot(transform,[0,0,0,1])[:-1]
         return np.asarray(transform[:-1,-1])
 
-    def getByName(self, name):
+    def getByName(self,
+                  name):
         """
-        Returns the joint object with the provided name
+        Traverse the hierarchy using Depth First Search (DFS) and returns the joint object with the provided name.
 
-        self: first joint in the hierarchy
-        name: name of the joint
+        :param str name: Name of the joint to be returned.
+
+        :returns: Joint object with the provided name.
+        :rtype: anim.Joints
         """
         if self.name == name:
             return self
@@ -780,6 +985,12 @@ class Joints:
                     return found
 
     def getDepth(self):
+        """
+        Computes the depth of the joint in the hierarchy
+
+        :returns: Depth of the joint in the hierarchy
+        :rtype: int
+        """
         depth = 0
         joint = self
         if joint.parent:
@@ -788,13 +999,18 @@ class Joints:
                 joint = joint.parent
         return depth
 
-    def getLastDepth(self, depth, jointsInDepth = []):
+    def getLastDepth(self,
+                     depth,
+                     jointsInDepth = []):
         """
-        Returns the last joint initializated with the depth provided
+        Returns the last joint initializated with the depth provided.
+        This function is misplaced, it probably should be in the anim.Animation class.
 
-        self: root of the hierarchy
-        depth: hierarchy level
-        jointsInDepth: list of joints at depth level
+        :param int depth: Depth of the joint in the hierarchy
+        :param list jointsInDepth: Don't use, internal control
+
+        :returns: Last joint initializated with the depth provided
+        :rtype: anim.Joints
         """
         if depth==0:
             return self
@@ -807,8 +1023,10 @@ class Joints:
 
     def getLength(self):
         """
-        Returns the length of the bone (distance between the joint to its first
-        child)
+        Returns the length of the bone (distance between the joint to its first child)
+
+        :returns: Length of the bone
+        :rtype: float
         """
         if not self.length:
             if len(self.endsite)>0:
@@ -820,14 +1038,14 @@ class Joints:
 
     def getBaseRotation(self):
         """
-        DON'T USE (it's not necessary)
+        Don't use it (it's not necessary). Deprecated function, should be removed in the next release along with everything related to baserotation.
+        Function based on the description of "Motion Capture File Formats Explained." by M. Meredith S.Maddock
 
         Returns the base rotation matrix of the bone associated with this joint.
         The base rotation matrix rotates the vector [0 length 0] to the offset
         vector. "length" is computed through self.getLength and "offset" through
         self.offset.
-
-        Motion Capture File Formats Explained. M. Meredith S.Maddock
+        
         """
         if len(self.baserotation)==0:
             self.getLength()
@@ -841,12 +1059,12 @@ class Joints:
             self.baserotation = euler
         return self.baserotation
 
-    def getRecalcRotationMatrix(self, frame):
+    def getRecalcRotationMatrix(self,
+                                frame):
         """
-        ESSA FUNçÂO NÂO DEVE SER UTILIZADA
-        Returns the recalculated local rotation matrix
-
-        Equation 4.9 from Motion Capture File Formats Explained. M. Meredith S.Maddock
+        Don't use it. Deprecated. Please use getLocalTransform() instead. It should be removed in the next release.
+        Function based on Equation 4.9 from "Motion Capture File Formats Explained." by M. Meredith S.Maddock
+        Returns the recalculated local rotation matrix.
         """
         #TODO: Eu preciso de um jeito de calcular a rotação global com a rotação base
         # pq minha rotação global atual não leva em conta a base, então pode estar
@@ -879,12 +1097,14 @@ class Joints:
         return matrix
 
 
-    def printHierarchy(self, hierarchy=[], endsite=False):
+    def printHierarchy(self,
+                       hierarchy=[],
+                       endsite=False):
         """
-        Print hierarchy below self
+        Print hierarchy of the joint.
 
-        self: first joint in the hierarchy
-        hierarchy: formatted hierarchy list
+        :param list hierarchy: Don't use, internal control
+        :param bool endsite: Don't use, internal control
         """
         flag = False
         if len(hierarchy)==0:
@@ -902,8 +1122,8 @@ class Joints:
         if flag:
             return hierarchy
 
-    #TODO: testar e verificar se é necessário
     def PoseBottomUp(self, value=np.zeros(3)):
+        #TODO: test and verify function
         aux = np.asarray([float(number) for number in self.offset])
         value = value + aux
         if self.parent:

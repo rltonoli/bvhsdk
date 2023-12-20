@@ -5,27 +5,44 @@ from os.path import basename as getfilename
 from os.path import join as pathjoin
 import time
 
-def WriteBVH(animation, path, name='_export', frametime = 0.00833333, refTPose = True, writeTranslation=True):
+def ReadFile(path,
+             surfaceinfo=None,
+             skipmotion=False):
     """
-    Create a bvh file with the motion contained in the animation.
+    Read BVH file and returns an anim.Animation object. The anim.Animation holds the information about the animation file and contain reference to anim.Joint objects. The global position of each joint is **not** computed when calling bvh.ReadFile().
 
-    :type animation: pyanimation.Animation
-    :param animation: Animation containing the motion
+    :param surface.Surface surfaceinfo: Attach the surface information of the corresponding character to the anim.Animation object. The surface information is only required for computing the egocentric coordinates. Default set to None. (*)
 
-    :type path: str
-    :param path: Full path to save the file
+    :param bool skipmotion: If set to True, the motion of the BVH file will not be read (skip everything after "Frame Time"), only the skeleton specification is stored. Default set to False.
+    
+    :returns: Animation object containing the information from the bvh file.
+    :rtype: anim.Animation
+    """
+    animation = GetBVHDataFromFile(path, skipmotion=skipmotion)
+    animation.surfaceinfo = surfaceinfo
 
-    :type name: str
-    :param name: Filename
+    return animation
 
-    :type frametime: float
-    :param frametime: 1/(Frame per second), the time duration of each frame
+def WriteBVH(animation, 
+             path, 
+             name = '_export', 
+             frametime = 0.00833333, 
+             writeTranslation = True,
+             refTPose = True):
+    """
+    Create a bvh file with the motion contained in the anim.Animation object using the information contained in joint.rotation and joint.translation.
 
-    :type refTPose: bool
-    :param refTPose: If True, the first frame of the animation is the input TPose reference
+    :param anim.Animation animation: anim.Animation containing the motion
 
-    :type writeTranslation: bool
-    :param writeTranslation: If True, write translations for every joint. If False, only write translation for the root joint
+    :param str path: Full path to save the file
+
+    :param str name: Filename without the '.bvh' extension.
+
+    :param float frametime: 1/(frame per second), the time duration of each frame. Default set to 120 fps.
+
+    :param bool writeTranslation: If set to True (default), translations (local positions) are written for every joint. Each joint will have six channels, with the first three representing X, Y, and Z translations. If set to False, only the translation (global position) for the root joint will be written.
+
+    :param bool refTPose: If set to True, the first frame of the BVH file will be the input TPose reference (default). Note that the TPose reference must be set manually for each joint and stored in joint.tposetrans and joint.tposerot as in retarget.MotionRetargeting().
     """
     if name:
         path = pathjoin(path, name)
@@ -117,20 +134,17 @@ def WriteBVH(animation, path, name='_export', frametime = 0.00833333, refTPose =
     print('File Saved: %s' % (path+'.bvh'))
 
 
-def GetBVHDataFromFile(path, skipmotion=False):
+def GetBVHDataFromFile(path, 
+                       skipmotion=False):
     """
-    Read a bvh file.
+    Auxiliary function to bvh.ReadFile(), it is not intended to be used by the user. It is the parser of the bvh file.
 
-    :type path: string or path
-    :param path: Complete path to the bvh file
+    :param str path: Full path to the bvh file
 
-    :type skipmotion: bool
-    :param skipmotion: Whether to read the motion of the file (False) or to
-    read only the skeleton definition.
+    :param bool skipmotion: If set to True, skip everything after "Frame Time", only the skeleton specification is stored. Default set to False.
 
-    :rtype bvhfile: Animation
-    :rparam bvhfile: An Animation object containing the information from the
-    bvh file.
+    :returns: Animation object containing the information from the bvh file.
+    :rtype: anim.Animation
     """
     # TODO: Account for BVH files without translation
     frame = 0
@@ -215,25 +229,33 @@ def GetBVHDataFromFile(path, skipmotion=False):
 
     return bvhfile
 
-def GetPositions(joint, frame=0, parentTransform=[], surfaceinfo=None, calibrating=None):
-    # Recebe o frame e a junta root, recursivamente calcula a posição de todos
-    # os filhos para esse frame
-    # Salva a posição em cada frame dentro de cada instância junta
+def GetPositions(joint,
+                 frame = 0,
+                 parentTransform=[],
+                 surfaceinfo=None,
+                 calibrating=None):
+    """
+    Recursevely compute the global position of each joint for the given frame. The global position is stored in joint.position. This function is not used anymore and could be removed or moved to the anim.Animation class in the future.
 
-    # Caso precise recalcular as posições das juntas, os dados antigos precisam
-    # ser apagados
+    :param anim.Joint joint: Joint to calculate the global position
 
-    #TODO: Orientation não significa nada, arrumar
+    :param int frame: Frame to calculate the global position, default set to 0.
 
+    :param list parentTransform: Parameter not intended for user input, used in recursion. List of 4x4 matrices, each matrix is the local transformation of the parent joint.
+
+    :param surface.Surface surfaceinfo: Legacy parameter, not used anymore. Should be removed in the future.
+
+    :param bool calibrating: Legacy parameter, not used anymore. Should be removed in the future.
+    """
     rot = joint.rotation[frame]
     transform = joint.getLocalTransform(frame)
 
     if len(parentTransform) == 0:
-        #Se for root apenas calcula a posição
+        # If it is the root joint, the global position is the same as the local position
         positionfinal = np.dot(transform, [0,0,0,1])
         orientation = np.asarray([rot[0], rot[1], rot[2]])
     else:
-        #Nos outros casos, multiplica pela transformada da junta pai
+        # If it is not the root joint, the global position is the joint's local transformation matrix multiplied by the parent joint's global transformation matrx
         transform = np.dot(parentTransform,transform)
         positionfinal = np.dot(transform,[0,0,0,1])
         orientation = joint.parent.orientation[frame,:] + np.asarray([rot[0], rot[1], rot[2]])
@@ -242,13 +264,13 @@ def GetPositions(joint, frame=0, parentTransform=[], surfaceinfo=None, calibrati
         joint.addPosition(np.asarray(positionfinal[:-1]), frame)
         joint.addOrientation(orientation, frame)
 
-    #Caso a junta tenha um endsite (é um end effector)
+    # If joint have an endsite (it is an end effector)
     if len(joint.endsite)>0:
         ee_transform = mathutils.matrixTranslation(joint.endsite[0], joint.endsite[1], joint.endsite[2])
         ee_transform = np.dot(transform,ee_transform)
         endsitepos = np.dot(ee_transform,[0,0,0,1])
         if not calibrating:
-            #Salva a posição do endsite da junta no frame atual
+            # Save endsite position in the current joint
             joint.addEndSitePosition(np.asarray(endsitepos[:-1]), frame)
 
 
@@ -256,13 +278,3 @@ def GetPositions(joint, frame=0, parentTransform=[], surfaceinfo=None, calibrati
     for child in joint.children:
         GetPositions(child, frame, parentTransform, surfaceinfo, calibrating)
     parentTransform=[]
-
-
-def ReadFile(path, surfaceinfo=None, skipmotion=False):
-    """
-    Read BVH file, create animation a joints instances and compute joint positions
-    """
-    animation = GetBVHDataFromFile(path, skipmotion=skipmotion)
-    animation.surfaceinfo = surfaceinfo
-
-    return animation

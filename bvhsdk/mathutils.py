@@ -11,15 +11,35 @@ import time
 
 
 def xaxis():
+    """
+    :return: Return a numpy array representing the x axis
+    :rtype: numpy.ndarray
+    """
     return np.asarray([1,0,0])
 
 def yaxis():
+    """
+    :return: Return a numpy array representing the y axis
+    :rtype: numpy.ndarray
+    """
     return np.asarray([0,1,0])
 
 def zaxis():
+    """
+    :return: Return a numpy array representing the z axis
+    :rtype: numpy.ndarray
+    """
     return np.asarray([0,0,1])
 
 def matrixIdentity(shape=3):
+    """
+    Return identity matrix of shape 3x3 or 4x4
+    
+    :param int shape: shape of the matrix. 3 for 3x3 and 4 for 4x4
+    
+    :return: identity matrix
+    :rtype: numpy.ndarray
+    """
     if shape==3:
         matrix = np.array([
                 [1, 0, 0],
@@ -39,8 +59,19 @@ def matrixIdentity(shape=3):
     return matrix
 
 
-def matrixTranslation(tx,ty,tz):
-    #Return translation matrix
+def matrixTranslation(tx,
+                      ty,
+                      tz):
+    """
+    Construct a transformation matrix for translation of tx, ty and tz
+
+    :param float tx: translation in x axis
+    :param float ty: translation in y axis
+    :param float tz: translation in z axis
+
+    :return: translation matrix
+    :rtype: numpy.ndarray
+    """
     matrix = np.array([
             [1, 0, 0, tx],
             [0, 1, 0, ty],
@@ -49,8 +80,25 @@ def matrixTranslation(tx,ty,tz):
             ])
     return matrix
 
-def matrixRotation(angle, x=0, y=0, z=0,shape=4):
-    #Return rotation matrix
+def matrixRotation(angle,
+                   x=0,
+                   y=0,
+                   z=0,
+                   shape=4):
+    """
+    Construct a transformation matrix for rotation of angle degrees around the axis defined by x, y and z.
+    If shape is 4 it will append create a 4x4 transformation matrix with translation equals to zero.
+
+    :param float angle: angle in degrees
+    :param float x: x axis
+    :param float y: y axis
+    :param float z: z axis
+    :param int shape: shape of the matrix. 3 for 3x3 and 4 for 4x4
+
+    :return: rotation matrix
+    :rtype: numpy.ndarray
+    """
+
     if x==0 and y==0 and z==0:
         print("No axis found. Values x, y and z can't be all zero.")
         return None
@@ -90,17 +138,24 @@ def matrixRotation(angle, x=0, y=0, z=0,shape=4):
     matrix[3,3] = 1
 
     if shape==3:
-#        matrix = np.asarray([matrix[i,j] for i in range(3) for j in range(3)])
         matrix = shape4ToShape3(matrix)
 
     return matrix
 
 
 
-def matrixMultiply(m0, m1):
-    #Multiplication  of 3x3 by 3x3 matrices or 4x4 by 4x4 matrices
-#    teste0 = np.asarray(m0)
-#    teste1 = np.asarray(m1)
+def matrixMultiply(m0,
+                   m1):
+    """
+    Perform matrix multiplication between m0 and m1. m0 and m1 can be 3x3 or 4x4 matrices.
+    For performance reasons, use numpy.dot() instead.
+
+    :param numpy.ndarray m0: matrix 0
+    :param numpy.ndarray m1: matrix 1
+
+    :return: matrix resulting from the multiplication
+    :rtype: numpy.ndarray
+    """
     start=time.time()
 
     if type(m0)!=type(np.ndarray([])):
@@ -184,6 +239,14 @@ def matrixMultiply(m0, m1):
 
 
 def inverseMatrix(m0):
+    """
+    Tries to invert matrix m0 using numpy.linalg.inv(). If it is not possible, returns None.
+
+    :param numpy.ndarray m0: matrix to be inverted
+
+    :return: inverted matrix
+    :rtype: numpy.ndarray
+    """
     try:
         matrix = np.linalg.inv(m0)
     except np.linalg.LinAlgError:
@@ -193,12 +256,24 @@ def inverseMatrix(m0):
     return matrix
 
 
-def projectedBarycentricCoord(p, p1, p2, p3):
+def projectedBarycentricCoord(p,
+                              p1,
+                              p2,
+                              p3):
+    """
+    Compute the baricentric coordinates of a point p projected onto a triangle defined by p1, p2 and p3.
+    Algorithm from "Computing the barycentric coordinates of a projected point." by Heidrich, Wolfgang, Journal of Graphics Tools 10, no. 3 (2005): 9-12.
+    
+    :param numpy.ndarray p: point to be projected
+    :param numpy.ndarray p1: first point of the triangle
+    :param numpy.ndarray p2: second point of the triangle
+    :param numpy.ndarray p3: third point of the triangle
+
+    :return: normal vector, baricentric coordinates, displacement vector, baricentric coordinates in cartesian space and a boolean indicating if the point is inside the triangle
+    :rtype: numpy.ndarray, numpy.ndarray, numpy.ndarray, numpy.ndarray, bool
+    """
     start = time.time()
-    #Algorithm from Heidrich, Wolfgang.
-    #"Computing the barycentric coordinates of a projected point."
-    #Journal of Graphics Tools 10, no. 3 (2005): 9-12.
-    # p: point. p1, p2 and p3: triangle's vertices points
+    
     if len(p)>3: p=p[:3]
     if len(p1)>3: p1=p1[:3]
     if len(p2)>3: p2=p2[:3]
@@ -232,12 +307,24 @@ def projectedBarycentricCoord(p, p1, p2, p3):
     projectedBarycentricCoord.time += time.time()-start
     return n, b, dispvector, b_cartesian, inside
 
-def clampedBarycentric(p,p1,p2,p3):
+def clampedBarycentric(p,
+                       p1,
+                       p2,
+                       p3):
+    """
+    Compute the baricentric coordinates of a point p projected onto a triangle defined by p1, p2 and p3.
+    Different from mathutils.projectedBarycentricCoord(), if p is outside the triangle, the baricentric coordinates are clamped to the triangle edges.
+    Algorithm from "Computing the barycentric coordinates of a projected point." by Heidrich, Wolfgang, Journal of Graphics Tools 10, no. 3 (2005): 9-12.
+    
+    :param numpy.ndarray p: point to be projected
+    :param numpy.ndarray p1: first point of the triangle
+    :param numpy.ndarray p2: second point of the triangle
+    :param numpy.ndarray p3: third point of the triangle
+
+    :return: normal vector, baricentric coordinates, displacement vector, baricentric coordinates in cartesian space and a boolean indicating if the point is inside the triangle
+    :rtype: numpy.ndarray, numpy.ndarray, numpy.ndarray, numpy.ndarray, bool
+    """
     start = time.time()
-    # Algorithm from Heidrich, Wolfgang.
-    # "Computing the barycentric coordinates of a projected point."
-    # Journal of Graphics Tools 10, no. 3 (2005): 9-12.
-    # p: point. p1, p2 and p3: triangle's vertices points
     if len(p)>3: p=p[:3]
     if len(p1)>3: p1=p1[:3]
     if len(p2)>3: p2=p2[:3]
@@ -272,7 +359,21 @@ def clampedBarycentric(p,p1,p2,p3):
     clampedBarycentric.time += time.time()-start
     return n, b, dispvector, b_cartesian, inside
 
-def barycentric2cartesian(bary, v1, v2, v3):
+def barycentric2cartesian(bary,
+                          v1,
+                          v2,
+                          v3):
+    """
+    Convert baricentric coordinates to cartesian coordinates
+
+    :param numpy.ndarray bary: baricentric coordinates
+    :param numpy.ndarray v1: first point of the triangle
+    :param numpy.ndarray v2: second point of the triangle
+    :param numpy.ndarray v3: third point of the triangle
+
+    :return: cartesian coordinates, normal vector
+    :rtype: numpy.ndarray, numpy.ndarray
+    """
     if len(bary)>3: bary=bary[:3]
     if len(v1)>3: v1=v1[:3]
     if len(v2)>3: v2=v2[:3]
@@ -284,7 +385,19 @@ def barycentric2cartesian(bary, v1, v2, v3):
     cart = bary[0]*v1 + bary[1]*v2 + bary[2]*v3
     return cart, n
 
-def getCentroid(p1,p2,p3):
+def getCentroid(p1,
+                p2,
+                p3):
+    """
+    Compute the centroid of a triangle defined by p1, p2 and p3.
+
+    :param numpy.ndarray p1: first point of the triangle
+    :param numpy.ndarray p2: second point of the triangle
+    :param numpy.ndarray p3: third point of the triangle
+
+    :return: centroid, normal vector
+    :rtype: numpy.ndarray, numpy.ndarray
+    """
     if len(p1)>3: p1=p1[:3]
     if len(p2)>3: p2=p2[:3]
     if len(p3)>3: p3=p3[:3]
@@ -296,7 +409,21 @@ def getCentroid(p1,p2,p3):
     n = unitVector(np.cross( u, v ))
     return np.mean([p1,p2,p3], axis=0), n
 
-def distFromCentroid(p, p1, p2, p3):
+def distFromCentroid(p,
+                     p1,
+                     p2,
+                     p3):
+    """
+    Compute the distance from a point p to the centroid of a triangle defined by p1, p2 and p3.
+
+    :param numpy.ndarray p: point of interest
+    :param numpy.ndarray p1: first point of the triangle
+    :param numpy.ndarray p2: second point of the triangle
+    :param numpy.ndarray p3: third point of the triangle
+    
+    :return: centroid, distance vector, normal vector
+    :rtype: numpy.ndarray, numpy.ndarray, numpy.ndarray
+    """
     if len(p)>3: p=p[:3]
     centroid, n = getCentroid(p1,p2,p3)
     distance = p-centroid
@@ -305,6 +432,14 @@ def distFromCentroid(p, p1, p2, p3):
 
 
 def matrixSkew(vec):
+    """
+    Construct a skew-symmetric matrix from a vector. If the vector is 3D, the matrix will be 3x3. If the vector is 4D, the matrix will be 4x4.
+
+    :param numpy.ndarray vec: vector to be converted to skew-symmetric matrix
+
+    :return: skew-symmetric matrix
+    :rtype: numpy.ndarray
+    """
     if vec.shape[0] == 4:
         matrix = np.array([
                 [0,       -vec[2], vec[1],  0],
@@ -323,14 +458,22 @@ def matrixSkew(vec):
         return None
     return matrix
 
-def alignVectors(a,b,shape=3):
+def alignVectors(a,
+                 b,
+                 shape=3):
     """
-    Returns a rotation matrix to align vector a onto vector b
-    #https://math.stackexchange.com/questions/180418/calculate-rotation-matrix-to-align-vector-a-to-vector-b-in-3d
+    Returns a rotation matrix to align vector a onto vector b.
+    This matrix is not constructed as RxRyRz, but from an axis-angle representation.
+    
+    Based on the algorithm available at https://math.stackexchange.com/questions/180418/calculate-rotation-matrix-to-align-vector-a-to-vector-b-in-3d
 
+    :param numpy.ndarray a: vector to be aligned
+    :param numpy.ndarray b: vector to be aligned to
 
-    ESSA MATRIZ NÃO É CONSTRUIDA RxRyRz, MAS A PARTIR DE UM EIXO
+    :return: rotation matrix
+    :rtype: numpy.ndarray
     """
+
     start=time.time()
     if (shape != 3) and (shape != 4):
         print('Shape %i not supported to represent a rotation matrix at mathutils.alignVectores(). Please choose 3 or 4.' % shape)
@@ -364,17 +507,23 @@ def alignVectors(a,b,shape=3):
     if shape==4:
         matrix = shape3ToShape4(matrix)
 
-
     alignVectors.time += time.time()-start
     alignVectors.count += 1
     return matrix
 
-def angleBetween(a,b):
+def angleBetween(a,
+                 b):
     """
-    Returns the euler angle between the vectors (from a to b)
+    Returns the euler angle between the vectors (from a to b) and the rotation axis
     https://stackoverflow.com/questions/15101103/euler-angles-between-two-3d-vectors
     http://www.euclideanspace.com/maths/geometry/rotations/conversions/angleToEuler/index.htm
     https://en.wikipedia.org/wiki/Rotation_formalisms_in_three_dimensions
+
+    :param numpy.ndarray a: vector to be aligned
+    :param numpy.ndarray b: vector to be aligned to
+
+    :return: angle between the vectors, axis of rotation
+    :rtype: float, numpy.ndarray
     """
     start = time.time()
     a_norm = a / np.linalg.norm(a)
@@ -759,7 +908,6 @@ def capsuleCollision(point, p0, p1, capradius):
 
     Surface: x^2+y^2+(1/4)*(|z-caplength|+|z+caplength| - 2*caplength)^2 - capradius^2 = 0
 
-
     Example:
     caplength = 10
     capradius = 2
@@ -785,7 +933,6 @@ def capsuleCollision(point, p0, p1, capradius):
         x^2+y^2+ 1 - 4 = 0
         x^2+y^2 - 3 = 0
         (Analogous to z=5)
-
     Finding surface starting from [0,0,0] and moving along direction=[a,b,c] with step=t
     (a*t)^2+(b*t)^2+(1/4)*(|(z*t)-caplength|+|(z*t)+caplength| - 2*caplength)^2 - capradius^2 = 0
 

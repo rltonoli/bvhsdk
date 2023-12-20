@@ -1,16 +1,16 @@
-# anim
+# bvh
 
 ```{eval-rst}
-.. automodule:: bvhsdk.anim
+.. automodule:: bvhsdk.bvh
    :members:
    :undoc-members:
    :show-inheritance:
 ```
 
-# bvh
+# anim
 
 ```{eval-rst}
-.. automodule:: bvhsdk.bvh
+.. automodule:: bvhsdk.anim
    :members:
    :undoc-members:
    :show-inheritance:
