@@ -61,7 +61,8 @@ def WriteBVH(animation,
                             file.write(str.format("\tCHANNELS 6 Xposition Yposition Zposition Xrotation Yrotation Zrotation\n"))
                         elif joint.order == 'ZXY':
                             file.write(str.format("\tCHANNELS 6 Xposition Yposition Zposition Zrotation Xrotation Yrotation\n"))
-
+                        elif joint.order == 'ZYX':
+                            file.write(str.format("\tCHANNELS 6 Xposition Yposition Zposition Zrotation Yrotation Xrotation\n"))
                     else:
                         if endsiteflag:
                             endsiteflag = False
@@ -81,8 +82,11 @@ def WriteBVH(animation,
                             file.write(aux_string + "Xrotation Yrotation Zrotation\n")
                         elif joint.order == 'ZXY':
                             file.write(aux_string + "Zrotation Xrotation Yrotation\n")
+                        elif joint.order == 'ZYX':
+                            file.write(aux_string + "Zrotation Yrotation Xrotation\n")
                         else:
-                            print('Order is not implemented')
+                            print('Order not implemented')
+                            raise NotImplementedError
                         if len(joint.endsite) > 0:
                             endsiteflag = True
                             file.write(str.format('%sEnd Site\n' % ((depth+1)*'\t')))
@@ -116,6 +120,8 @@ def WriteBVH(animation,
                             line = line + [joint.tposerot[0], joint.tposerot[1], joint.tposerot[2]]
                         elif joint.order=='ZXY':
                             line = line + [joint.tposerot[2], joint.tposerot[0], joint.tposerot[1]]
+                        elif joint.order=='ZYX':
+                            line = line + [joint.tposerot[2], joint.tposerot[1], joint.tposerot[0]]
                     string = " ".join(str.format("%.2f"%number) for number in line)
                     file.write(string+'\n')
 
@@ -129,6 +135,8 @@ def WriteBVH(animation,
                             line = line + [joint.rotation[frame,0], joint.rotation[frame,1], joint.rotation[frame,2]]
                         elif joint.order=='ZXY':
                             line = line + [joint.rotation[frame,2], joint.rotation[frame,0], joint.rotation[frame,1]]
+                        elif joint.order=='ZYX':
+                            line = line + [joint.rotation[frame,2], joint.rotation[frame,1], joint.rotation[frame,0]]
                     string = " ".join(str.format("%.2f"%number) for number in line)
                     file.write(string+'\n')
     print('File Saved: %s' % (path+'.bvh'))
@@ -195,11 +203,16 @@ def GetBVHDataFromFile(path,
                         raise NotImplementedError
                     X, Y, Z = lastJoint.channels["Xrotation"], lastJoint.channels["Yrotation"], lastJoint.channels["Zrotation"]
                     if Z < X and X < Y: lastJoint.order = "ZXY"
-                    elif X < Y and Y < Z: lastJoint.order = "XYZ"
                     else:
-                        lastJoint.order("XYZ")
-                        print("Invalid Channels order. XYZ chosen.")
-                        raise NotImplementedError
+                        if X < Y and Y < Z: 
+                            lastJoint.order = "XYZ"
+                        elif Z < Y and Y < X:
+                            lastJoint.order = "ZYX"
+                        else:
+                            print("Invalid Channels order.")
+                            raise NotImplementedError
+                        print("WARNING: Channels order %s for Joint %s is not fully implemented yet." % (lastJoint.order, lastJoint.name))
+                        print("bvhsdk only fully supports ZXY order. Use it with caution.")
 
                 elif (line.find("Frames")) >= 0:
                     bvhfile.frames = int(line[8:])
