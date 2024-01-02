@@ -130,7 +130,10 @@ def WriteBVH(animation,
                     line = []
                     for joint in animation.getlistofjoints():
                         if writeTranslation or joint==animation.root:
-                            line = line + [joint.translation[frame,0], joint.translation[frame,1], joint.translation[frame,2]]
+                            if joint.n_channels == 6:
+                                line = line + [joint.translation[frame,0], joint.translation[frame,1], joint.translation[frame,2]]
+                            else:
+                                line = line + [joint.offset[0], joint.offset[1], joint.offset[2]]
                         if joint.order=='XYZ':
                             line = line + [joint.rotation[frame,0], joint.rotation[frame,1], joint.rotation[frame,2]]
                         elif joint.order=='ZXY':
