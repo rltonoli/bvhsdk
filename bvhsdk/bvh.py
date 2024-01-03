@@ -26,7 +26,7 @@ def ReadFile(path,
 def WriteBVH(animation, 
              path, 
              name = '_export', 
-             frametime = 0.00833333, 
+             frametime = None, 
              writeTranslation = True,
              refTPose = True):
     """
@@ -48,6 +48,8 @@ def WriteBVH(animation,
         path = pathjoin(path, name)
     endsiteflag = False
     depth = 0
+    if frametime is None:
+        frametime = animation.frametime
     with open(str.format("%s.bvh" % path), "w") as file:
         file.write('HIERARCHY\n')
         for section in ['header', 'content']:
