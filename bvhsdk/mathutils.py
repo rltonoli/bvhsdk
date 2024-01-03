@@ -646,6 +646,12 @@ def eulerFromMatrix(matrix, order='ZXY'):
             z + y = atan2(matrix[1,0], -matrix[0,0])
             z = -y + atan2(matrix[1,0], -matrix[0,0])
 
+    order = 'ZYX'
+    ((RzRx)Ry) =
+        cos(y)cos(z)    sin(x)sin(y)cos(z)-cos(x)sen(z)   cos(x)sin(y)cos(z)+sen(x)sen(z)
+        cos(y)sin(z)    sin(x)sin(y)sin(z)+cos(x)cos(z)   cos(x)sin(y)sin(z)-sen(x)cos(z)
+        -sin(y)         sin(x)cos(y)                      cos(x)cos(y)
+
     :type matrix: numpy.ndarray
     :param matrix: 3x3 rotation matrix or 4x4 transform matrix
 
@@ -692,6 +698,24 @@ def eulerFromMatrix(matrix, order='ZXY'):
             else:
                 x1,y1,z1=0,0,0
 
+    elif order == 'ZYX':
+        if not isNear(matrix[2,0],1) and not isNear(matrix[2,0], -1):
+            y1 = -np.arcsin(matrix[2,0])
+            #sin(pi-theta) = sin(theta)
+            #y2 = np.pi - y1
+            x1 = np.arctan2(matrix[2,1]/np.cos(y1),matrix[2,2]/np.cos(y1))
+            #x2 = np.arctan2(matrix[2,1]/np.cos(y2),matrix[2,2]/np.cos(y2))
+            z1 = np.arctan2(matrix[1,0]/np.cos(y1),matrix[0,0]/np.cos(y1))
+            #z2 = np.arctan2(matrix[1,0]/np.cos(y2),matrix[0,0]/np.cos(y2))
+        else:
+            warning = True
+            z1 = 0
+            if isNear(matrix[2,0],-1):
+                y1 = np.pi/2
+                x1 = np.arctan2(matrix[0,1], matrix[0,2])
+            elif isNear(matrix[2,0],1):
+                y1 = -np.pi/2
+                x1 = np.arctan2(-matrix[0,1], -matrix[0,2])
 
     #TODO: Corrigir
     elif order == 'XYZ':
@@ -701,6 +725,7 @@ def eulerFromMatrix(matrix, order='ZXY'):
         x2,y2,z2 =0,0,0
         if matrix[0,0] < 0.01:
             warning = True
+        raise ValueError('Order %s not implemented yet.' % order)
 
 #    return np.asarray([x1,y1,z1])*180/np.pi, np.asarray([x2,y2,z2])*180/np.pi, warning
 
@@ -777,6 +802,9 @@ def matrixR(R, order='ZXY', shape=3):
     elif order == "XYZ":
         matrix = np.dot(rotx, roty)
         matrix = np.dot(matrix, rotz)
+    elif order == "ZYX":
+        matrix = np.dot(rotz, roty)
+        matrix = np.dot(matrix, rotx)
     else:
         print('mathutils.matrixR does not accept rotation order %s' %order)
     if shape == 3:
