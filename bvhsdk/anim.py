@@ -426,7 +426,25 @@ class Animation:
         else:
             return np_array, np_array_rot
 
+    def newRotationOrder(self, 
+                         newOrder):
+        """
+        Change the rotation order of all joints in the animation to the newOrder provided. This method assumes that every joint has the same rotation order.
 
+        Note: This method was only tested for changing rotation order from ZXY to ZYX. It will not work for other rotation orders.
+        To add another convertion, you will need to update the mathutils.matrixR(), mathutils.eulerFromMatrix() and Joint.getLocalTransform() methods.
+        You'll also need to make sure that the bvh.ReadFile() and bvh.WriteBVH() methods are updated to read and write the new rotation order.
+        Additionally, that does not mean that the new order will work with the rest of the code.
+
+        :param str newOrder: New rotation order. Can be "XYZ", "ZYX" or "ZXY".
+        """
+        assert self.root.order == "ZXY", "This method was only tested for changing rotation order from ZXY to ZYX. It will not work for other rotation orders."
+        for joint in self.getlistofjoints():
+            for frame in range(self.frames):
+                transformMatrix = joint.getLocalTransform(frame)
+                newrot, _ = mathutils.eulerFromMatrix(transformMatrix, newOrder)
+                joint.setLocalRotation(frame, newrot)
+            joint.order = newOrder
 
 
 class Joints:
@@ -693,6 +711,10 @@ class Joints:
             transform = np.dot(transform, rotx)
             transform = np.dot(transform, roty)
             transform = np.dot(transform, rotz)
+        elif self.order == "ZYX":
+            transform = np.dot(transform, rotz)
+            transform = np.dot(transform, roty)
+            transform = np.dot(transform, rotx)
         return transform
 
     def getLocalTransformBaseRotation(self,
