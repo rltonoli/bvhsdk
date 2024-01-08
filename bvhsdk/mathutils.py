@@ -538,6 +538,20 @@ def angleBetween(a,
 
 #def axisAngleToEuler(axis,angle):
 
+def multiInterp(x,
+                xp,
+                arr):
+    """
+    Performs a linear interpolation like numpy.interp() but for multidimensional arrays. Interpolation is performed independently for each dimension.
+    
+    :param numpy.ndarray x: The x-coordinates at which to evaluate the interpolated values (same for all dimensions)
+    :param numpy.ndarray xp: The x-coordinates of the data points (same for all dimensions)
+    :param numpy.ndarray arr: Multi-dimensional array of data with the same length as xp along the interpolation axis.
+
+    :return: interpolated array
+    :rtype: numpy.ndarray
+    """
+    return np.array([np.interp(x, xp, arr[:,i]) for i in range(arr.shape[1])]).T
 
 def isnear(x,y, epsilon = 1e-4):
     if abs(x-y) < epsilon:

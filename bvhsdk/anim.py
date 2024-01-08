@@ -377,7 +377,17 @@ class Animation:
         print(str.format('Animation downsampled to %i fps. %i frames.' % (target_fps, self.frames)))
         return True
 
-
+    def doubleSample(self):
+        """
+        Up sample the animation to the double of the current frame rate.
+        TODO: Create an upsample method that uses interpolation.
+        """
+        self.frames = self.frames*2
+        for joint in self.getlistofjoints():
+            aux = np.empty(shape=(self.frames, 3))
+            joint.rotation = mathutils.multiInterp(np.arange(self.frames), np.arange(0, self.frames, 2), joint.rotation)
+            joint.translation = mathutils.multiInterp(np.arange(self.frames), np.arange(0, self.frames, 2), joint.translation)
+        self.frametime = self.frametime/2
 
     def MLPreProcess(self, 
                      skipjoints=[],
