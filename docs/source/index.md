@@ -14,6 +14,11 @@
 % other useful resources:
 % How to structure your code https://www.youtube.com/watch?v=v6tALyc4C10
 % More on sphinx and autodoc https://www.youtube.com/watch?v=BWIrhgCAae0
+%
+% To publish in PyPI i used Flit to build the dist folder and twine to publish it to PyPI
+% You'll need to to generate a token in PyPI (that starts with pypi-...) and configure the .pypirc file
+% In windows, I put the file in C:\Users\Rodolfo
+% Refer to https://packaging.python.org/en/latest/specifications/pypirc/ or https://blog.jetbrains.com/pycharm/2017/05/how-to-publish-your-package-on-pypi/ for more info
 
 
 ![bvhsdk logo](logo.png)

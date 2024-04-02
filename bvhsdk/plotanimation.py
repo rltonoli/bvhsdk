@@ -9,6 +9,169 @@ plt.rcParams['font.family'] = 'serif'
 plt.rcParams["font.serif"] = "Times New Roman"
 plt.rcParams["font.size"] = 20.0
 
+def plot3d(animation,
+           mode = 'bones',
+           frameDelay = 0,
+           viewPlane = 0,
+           floorPlane = True,
+           skiproot = 0,
+           dist = 7,
+           figsize = (12,8),
+           color = 'black',
+           marker='o', 
+           linestyle='-', 
+           markersize=2,
+           ):
+    """
+    Plot BVH animation joints. Currently assumes Y-up character.
+    Supports 3D scatter plot and bones plot ('scatter' and 'bones' modes, respectively).
+
+    Ipython Jupyter Notebook-friendly function.
+    Make sure to include the following line in your notebook:
+    %matplotlib notebook
+    import matplotlib
+    matplotlib.rc('animation', html='html5')
+    These lines may also be necessary:
+    from ipywidgets import interact, interactive, widgets
+    from IPython.display import display
+    
+    :param anim.Animation animation: Animation object to be draw
+    :param str mode: Choose between 'bones' or 'scatter' modes. 'bones' will draw the bones of the skeleton, 'scatter' will draw the joints as points.
+    :param int frameDelay: Interval or delay between frames of matplotlib's FuncAnimation function in miliseconds. If 0, use animation's frametime to match intended fps from BVH file.
+    :param int viewPlane: Primary view plane option (choose between 1 and )
+    :param bool floorPlane: If True, draw a XZ plane with Y = 0 as reference.
+    :param int skiproot: Skip the first skiproot joints in the hierarchy. Useful when the skeleton has a body world reference or an origin joint.
+    :param float dist: Distance from the camera to the plot. Matplotlib default is 10.
+    :param tuple figsize: Figure size in inches.
+    :param str color: Color of the plot elements.
+    :param str marker: Marker style for scatter plot.
+    :param str linestyle: Line style for bones plot.
+    :param int markersize: Marker size for scatter plot.
+
+    :return: Return a matplotlib.animation object containing the animation.
+    :rtype: matplotlib.animation
+    """
+    fig = plt.figure(figsize=figsize)
+    ax = fig.add_subplot(111, projection='3d')
+
+    print('Precomputing positions...')
+    precomp_positions = [joint.getPosition(frame) for frame in range(animation.frames) for joint in animation.getlistofjoints()]
+    precomp_positions = np.reshape(np.asarray(precomp_positions), newshape = (animation.frames, len(animation.getlistofjoints()), 3))
+    # precomp_positions shape: (frames, joints, xyz)
+
+    frameDelay = int(animation.frametime * 1000) if frameDelay == 0 else frameDelay
+
+    mindata = np.min(precomp_positions)
+    maxdata = np.max(precomp_positions)
+
+    if mode == 'bones':
+        ani = plot3DBones(animation, fig, ax, precomp_positions, frameDelay, color, skiproot, marker, linestyle, markersize)
+    elif mode == 'scatter':
+        ani = plot3DJoints(animation, fig, ax, precomp_positions, frameDelay, color, marker, markersize)
+    else:
+        print('Invalid mode. Choose between "bones" or "scatter".')
+        return None
+
+    mindata = np.min(precomp_positions)
+    maxdata = np.max(precomp_positions)
+    ax.set_xlim(mindata,maxdata)
+    ax.set_ylim(mindata,maxdata)
+    ax.set_zlim(mindata,maxdata)
+
+    # Draw floor plane
+    if floorPlane:
+        sx, sz = np.meshgrid(range(-int(maxdata), int(maxdata)), range(-int(maxdata), int(maxdata)))
+        sy = np.zeros(shape=sx.shape)
+        ax.plot_surface(sx, sy, sz, alpha=0.2)
+    
+    # Set initial view direction
+    if viewPlane:
+        # (plane, (elev, azim, roll))
+        views = [('XY',   (90, -90, 0)),
+                ('XZ',    (0, -90, 0)),
+                ('YZ',    (0,   0, 0)),
+                ('-XY', (-90,  90, 0)),
+                ('-XZ',   (0,  90, 0)),
+                ('-YZ',   (0, 180, 0))]
+        angles = views[viewPlane - 1][1]
+        ax.view_init(elev=angles[0], azim=angles[1])
+    else:
+        ax.view_init(elev=100, azim=-90)
+        
+    if dist:
+        ax.dist=dist
+        
+    ax.grid(False)
+    ax.axis('off')
+
+    return ani
+    
+def plot3DJoints(animation, 
+            fig,
+            ax,
+            precomp_positions,
+            frameDelay,
+            color,
+            marker,
+            markersize,
+            ):
+    def update(frame, scatters, precomp_positions):
+        for scat, joint, i in zip(scatters, animation.getlistofjoints(), range(len(animation.getlistofjoints()))):
+            if precompute:
+                position = precomp_positions[frame, i]
+            else:
+                position = joint.getPosition(frame)
+            scat.set_data([position[0]],[position[1]])
+            scat.set_3d_properties([position[2]])
+
+        return scatters
+        
+    scatters = []
+    for i, _ in enumerate(animation.getlistofjoints()):
+        position = precomp_positions[0, i]
+        scatters.append(ax.plot([position[0]],[position[1]],[position[2]], marker=marker, color=color, markersize=markersize)[0])
+    
+    ani = FuncAnimation(fig, update, frames=np.arange(animation.frames), fargs=([scatters, precomp_positions]) ,interval=frameDelay, blit=True)
+    plt.show()
+    return ani
+
+def plot3DBones(animation,
+                  fig,
+                  ax,
+                  precomp_positions,
+                  frameDelay,
+                  color,
+                  skiproot,
+                  marker,
+                  linestyle,
+                  markersize,
+                  ):
+
+    def update(frame, lines, precomp_positions, parents):
+        for line, i in zip(lines, range(len(parents)-len(lines), len(parents))): # This range is to account for skiproot
+            x = [precomp_positions[frame, parents[i], 0], precomp_positions[frame, i, 0]]
+            y = [precomp_positions[frame, parents[i], 1], precomp_positions[frame, i, 1]]
+            z = [precomp_positions[frame, parents[i], 2], precomp_positions[frame, i, 2]]
+            line.set_data(x,y)
+            line.set_3d_properties(z)
+        return lines
+            
+    parents = animation.arrayParent()
+    
+    lines = []
+    for i in range(skiproot, len(parents)):
+        x = [precomp_positions[0, parents[i], 0], precomp_positions[0 , i, 0]]
+        y = [precomp_positions[0, parents[i], 1], precomp_positions[0 , i, 1]]
+        z = [precomp_positions[0, parents[i], 2], precomp_positions[0 , i, 2]]
+        lines.append(ax.plot(x, y, z, marker=marker, linestyle=linestyle, markersize=markersize, c=color)[0])  
+    
+    ani = FuncAnimation(fig, update, frames=np.arange(animation.frames), fargs=([lines, precomp_positions, parents]),
+                        interval=frameDelay, blit=True)
+
+    
+    plt.show()
+    return ani
+
 def AnimPlot(data):
 
     def update(frame):
@@ -44,81 +207,6 @@ def AnimPlot(data):
     xdata, ydata, zdata = [], [], []
     ln, = plt.plot([], [], 'ro', animated=True)
     animate()
-
-def AnimPlotBones(animation, color='black', frameDelay = 0, viewPlane = 0,floorPlane = True, skiproot = 0, dist=7):
-
-    def update(frame, lines, precomp_positions, parents):
-        for line, i in zip(lines, range(len(parents)-len(lines), len(parents))): # This range is to account for skiproot
-            x = [precomp_positions[frame, parents[i], 0], precomp_positions[frame, i, 0]]
-            y = [precomp_positions[frame, parents[i], 1], precomp_positions[frame, i, 1]]
-            z = [precomp_positions[frame, parents[i], 2], precomp_positions[frame, i, 2]]
-            line.set_data(x,y)
-            line.set_3d_properties(z)
-        return lines
-
-    print('Precomputing joint positions...')
-    precomp_positions = [joint.getPosition(frame) for frame in range(animation.frames) for joint in animation.getlistofjoints()]
-    precomp_positions = np.reshape(np.asarray(precomp_positions), newshape = (animation.frames, len(animation.getlistofjoints()), 3))
-    # precomp_positions shape: (frames, joints, xyz)
-    
-    mindata = np.min(precomp_positions)
-    maxdata = np.max(precomp_positions)
-    
-    frameDelay = int(animation.frametime * 1000) if frameDelay == 0 else frameDelay
-    
-    fig = plt.figure(figsize=(12,8))
-    ax = fig.add_subplot(111, projection='3d')
-    
-    parents = animation.arrayParent()
-    
-    lines = []
-    for i in range(skiproot, len(parents)):
-        x = [precomp_positions[0, parents[i], 0], precomp_positions[0 , i, 0]]
-        y = [precomp_positions[0, parents[i], 1], precomp_positions[0 , i, 1]]
-        z = [precomp_positions[0, parents[i], 2], precomp_positions[0 , i, 2]]
-        lines.append(ax.plot(x, y, z, marker='o', linestyle='-', markersize=2, c=color)[0])
-
-    ax.set_xlabel('X')
-    ax.set_ylabel('Y')
-    ax.set_zlabel('Z')
-    ax.set_xlim(mindata,maxdata)
-    ax.set_ylim(mindata,maxdata)
-    ax.set_zlim(mindata,maxdata)    
-    
-    ani = FuncAnimation(fig, update, frames=np.arange(animation.frames), fargs=([lines, precomp_positions, parents]),
-                        interval=frameDelay, blit=True)
-    
-    # Draw floor plane
-    if floorPlane:
-        
-        sx, sz = np.meshgrid(range(-int(maxdata), int(maxdata)), range(-int(maxdata), int(maxdata)))
-        sy = np.zeros(shape=sx.shape)
-        ax.plot_surface(sx, sy, sz, alpha=0.2)
-    
-    # Set initial view direction
-    if viewPlane:
-        # (plane, (elev, azim, roll))
-        views = [('XY',   (90, -90, 0)),
-                 ('XZ',    (0, -90, 0)),
-                 ('YZ',    (0,   0, 0)),
-                 ('-XY', (-90,  90, 0)),
-                 ('-XZ',   (0,  90, 0)),
-                 ('-YZ',   (0, 180, 0))]
-        angles = views[viewPlane - 1][1]
-        ax.view_init(elev=angles[0], azim=angles[1])
-    else:
-        ax.view_init(elev=100, azim=-90)
-        
-    if dist:
-        ax.dist=dist
-        
-    ax.grid(False)
-    ax.axis('off')
-    
-    plt.show()
-    return ani
-
-
 
 def AnimPlotBones2D(data, plotax='xy'):
 
@@ -557,106 +645,6 @@ def DebugEgoCoord(animation, frame, proj = '3d'):
         ax.plot([RFore[0],RHand[0]],[RFore[1],RHand[1]], '-o',color='blue')
         ax.plot([LFore[0],LHand[0]],[LFore[1],LHand[1]], '-o',color='blue')
         plt.show()
-
-
-
-def PlotBVH(animation, 
-            frameDelay = 0, 
-            precompute = True, 
-            viewPlane = 0,
-            floorPlane = True,
-            ):
-    """
-    Plot BVH animation joints as point cloud. Currently assumes Y-up character.
-    Works better if precompute is True.
-    Calculate the position inside this funtion.
-    Ipython Jupyter Notebook-friendly function.
-
-    Make sure to include the following line in your notebook:
-    %matplotlib notebook
-    import matplotlib
-    matplotlib.rc('animation', html='html5')
-
-    These lines may also be necessary:
-    from ipywidgets import interact, interactive, widgets
-    from IPython.display import display
-    
-    :param anim.Animation animation: Animation object to be draw
-    :param int frameDelay: Interval or delay between frames of matplotlib's FuncAnimation function in miliseconds. If 0, use animation's frametime to match intended fps from BVH file.
-    :param int viewPlane: Primary view plane option (choose between 1 and )
-    :param bool precompute: If True, the function will precompute the positions of the joints. If False, the function will calculate the position of the joints at each frame.
-    """
-    def update(frame, scatters, precomp_positions):
-        for scat, joint, i in zip(scatters, animation.getlistofjoints(), range(len(animation.getlistofjoints()))):
-            if precompute:
-                position = precomp_positions[frame, i]
-            else:
-                position = joint.getPosition(frame)
-            scat.set_data([position[0]],[position[1]])
-            scat.set_3d_properties([position[2]])
-
-        return scatters
-
-    fig = plt.figure(figsize=(12,8))
-    ax = fig.add_subplot(111, projection='3d')
-        
-    precomp_positions = None
-    if precompute:
-        print('Precomputing positions...')
-        precomp_positions = [joint.getPosition(frame) for frame in range(animation.frames) for joint in animation.getlistofjoints()]
-        precomp_positions = np.reshape(np.asarray(precomp_positions), newshape = (animation.frames, len(animation.getlistofjoints()), 3))
-        
-    frameDelay = int(animation.frametime * 1000) if frameDelay == 0 else frameDelay
-
-    scatters = []
-    maxdata = -np.inf
-    mindata = np.inf
-    for i, joint in enumerate(animation.getlistofjoints()):
-        if precompute:
-            position = precomp_positions[0, i]
-        else:
-            position = joint.getPosition(frame = 0)
-        scatters.append(ax.plot([position[0]],[position[1]],[position[2]],'o', color='red', markersize=1)[0])
-        if np.min(position)<mindata:
-            mindata = np.min(position)
-        if np.max(position)>maxdata:
-            maxdata = np.max(position)      
-            
-    ax.set_xlabel('X')
-    ax.set_ylabel('Y')
-    ax.set_zlabel('Z')
-    ax.set_xlim(mindata,maxdata)
-    ax.set_ylim(mindata,maxdata)
-    ax.set_zlim(mindata,maxdata)
-    
-    # Draw floor plane
-    if floorPlane:
-        
-        sx, sz = np.meshgrid(range(-int(maxdata), int(maxdata)), range(-int(maxdata), int(maxdata)))
-        sy = np.zeros(shape=sx.shape)
-        ax.plot_surface(sx, sy, sz, alpha=0.2)
-    
-    # Set initial view direction
-    if viewPlane:
-        # (plane, (elev, azim, roll))
-        views = [('XY',   (90, -90, 0)),
-                 ('XZ',    (0, -90, 0)),
-                 ('YZ',    (0,   0, 0)),
-                 ('-XY', (-90,  90, 0)),
-                 ('-XZ',   (0,  90, 0)),
-                 ('-YZ',   (0, 180, 0))]
-        angles = views[viewPlane - 1][1]
-        ax.view_init(elev=angles[0], azim=angles[1])
-    else:
-        ax.view_init(elev=100, azim=-90)
-        
-    ax.grid(False)
-    ax.axis('off')
-    
-    ani = FuncAnimation(fig, update, frames=np.arange(animation.frames), fargs=([scatters, precomp_positions]) ,interval=frameDelay, blit=True)
-    plt.show()
-    return ani
-
 
 def PlotBVHSurface(animation, surface):
     def update(frame, surf, lines):

@@ -4,7 +4,7 @@ build-backend = "flit_core.buildapi"
 
 [project]
 name = "bvhsdk"
-version = "0.1.0"
+version = "0.2.0"
 authors = [
   { name="Rodolfo Luis Tonoli", email="rltonoli@gmail.com" },
 ]
