@@ -45,37 +45,79 @@ def AnimPlot(data):
     ln, = plt.plot([], [], 'ro', animated=True)
     animate()
 
-def AnimPlotBones(data):
+def AnimPlotBones(animation, color='black', frameDelay = 0, viewPlane = 0,floorPlane = True, skiproot = 0, dist=7):
 
-    def update(frame, lines, data):
-        print(frame)
-        for line, dataBone in zip(lines, data):
-            x = np.asarray([dataBone[0,frame], dataBone[4,frame]])
-            y = np.asarray([dataBone[1,frame], dataBone[5,frame]])
-            z = np.asarray([dataBone[2,frame], dataBone[6,frame]])
+    def update(frame, lines, precomp_positions, parents):
+        for line, i in zip(lines, range(len(parents)-len(lines), len(parents))): # This range is to account for skiproot
+            x = [precomp_positions[frame, parents[i], 0], precomp_positions[frame, i, 0]]
+            y = [precomp_positions[frame, parents[i], 1], precomp_positions[frame, i, 1]]
+            z = [precomp_positions[frame, parents[i], 2], precomp_positions[frame, i, 2]]
             line.set_data(x,y)
             line.set_3d_properties(z)
         return lines
 
+    print('Precomputing joint positions...')
+    precomp_positions = [joint.getPosition(frame) for frame in range(animation.frames) for joint in animation.getlistofjoints()]
+    precomp_positions = np.reshape(np.asarray(precomp_positions), newshape = (animation.frames, len(animation.getlistofjoints()), 3))
+    # precomp_positions shape: (frames, joints, xyz)
+    
+    mindata = np.min(precomp_positions)
+    maxdata = np.max(precomp_positions)
+    
+    frameDelay = int(animation.frametime * 1000) if frameDelay == 0 else frameDelay
+    
     fig = plt.figure(figsize=(12,8))
     ax = fig.add_subplot(111, projection='3d')
-
+    
+    parents = animation.arrayParent()
+    
     lines = []
-    for i in range(len(data)):
-        lines.append(ax.plot([data[i,0,0], data[i,4,0]], [data[i,1,0], data[i,5,0]], [data[i,2,0], data[i,6,0]],'-o', c='black')[0])
+    for i in range(skiproot, len(parents)):
+        x = [precomp_positions[0, parents[i], 0], precomp_positions[0 , i, 0]]
+        y = [precomp_positions[0, parents[i], 1], precomp_positions[0 , i, 1]]
+        z = [precomp_positions[0, parents[i], 2], precomp_positions[0 , i, 2]]
+        lines.append(ax.plot(x, y, z, marker='o', linestyle='-', markersize=2, c=color)[0])
 
-
-    ax.set_xlabel('X Label')
-    ax.set_ylabel('Y Label')
-    ax.set_zlabel('Z Label')
-    mini,maxi = np.min(data), np.max(data)
-    ax.set_xlim(mini,maxi)
-    ax.set_ylim(mini,maxi)
-    ax.set_zlim(mini,maxi)
-    ani = FuncAnimation(fig, update, frames=np.arange(len(data[0,0,:])), fargs=(lines, data),interval=2,
-                             blit=True)
-
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
+    ax.set_xlim(mindata,maxdata)
+    ax.set_ylim(mindata,maxdata)
+    ax.set_zlim(mindata,maxdata)    
+    
+    ani = FuncAnimation(fig, update, frames=np.arange(animation.frames), fargs=([lines, precomp_positions, parents]),
+                        interval=frameDelay, blit=True)
+    
+    # Draw floor plane
+    if floorPlane:
+        
+        sx, sz = np.meshgrid(range(-int(maxdata), int(maxdata)), range(-int(maxdata), int(maxdata)))
+        sy = np.zeros(shape=sx.shape)
+        ax.plot_surface(sx, sy, sz, alpha=0.2)
+    
+    # Set initial view direction
+    if viewPlane:
+        # (plane, (elev, azim, roll))
+        views = [('XY',   (90, -90, 0)),
+                 ('XZ',    (0, -90, 0)),
+                 ('YZ',    (0,   0, 0)),
+                 ('-XY', (-90,  90, 0)),
+                 ('-XZ',   (0,  90, 0)),
+                 ('-YZ',   (0, 180, 0))]
+        angles = views[viewPlane - 1][1]
+        ax.view_init(elev=angles[0], azim=angles[1])
+    else:
+        ax.view_init(elev=100, azim=-90)
+        
+    if dist:
+        ax.dist=dist
+        
+    ax.grid(False)
+    ax.axis('off')
+    
     plt.show()
+    return ani
+
 
 
 def AnimPlotBones2D(data, plotax='xy'):

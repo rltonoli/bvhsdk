@@ -54,7 +54,11 @@ class Animation:
 
     def arrayParent(self):
         """
-        Create two numpy arrays with the hierarchy information of the joints. The first array contains the depth of each joint in the hierarchy. The second array contains the index of the parent of each joint.
+        Create a numpy array that contains the index of the parent of each joint.
+        Jérôme Eippers offers a fine visualization of this array in his YouTube channel Animation Tech, available at https://www.youtube.com/watch?v=cwmrRvw2mPM
+
+        :returns: List of int.
+        :rtype: List[int]
         """
         joints = self.getlistofjoints()
         parent = np.asarray([joints.index(joint.parent) if joint.parent else -1 for joint in joints])
