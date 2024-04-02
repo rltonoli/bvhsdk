@@ -52,6 +52,14 @@ class Animation:
         if joint == self.root:
             return listofjoints
 
+    def arrayParent(self):
+        """
+        Create two numpy arrays with the hierarchy information of the joints. The first array contains the depth of each joint in the hierarchy. The second array contains the index of the parent of each joint.
+        """
+        joints = self.getlistofjoints()
+        parent = np.asarray([joints.index(joint.parent) if joint.parent else -1 for joint in joints])
+        return parent
+
     # def getskeletonmap(self, mapfile=None):
     #     """
     #     Pega o mapeamento do esqueleto. Procura juntas como hips, spine, arm,
@@ -175,7 +183,7 @@ class Animation:
             for joint,i in zip(self.getlistofjoints(),range(totaljoints)):
                 joints[i] = [joint.position[frame,0],joint.position[frame,1],joint.position[frame,2]]
             joints = np.asarray(joints)
-            bones = self.getBones(frame)
+            bones = self.old_getBones(frame)
             plotanimation.PosePlotBones(joints, bones)
         else:
 
@@ -185,7 +193,7 @@ class Animation:
 #            for joint,i in zip(self.getlistofjoints(),range(totaljoints)):
 #                joints[i] = [joint.getPosition(frame)[0],joint.getPosition(frame)[1],joint.getPosition(frame)[2]]
 #            joints = np.asarray(joints)
-#            bones = self.getBones(frame)
+#            bones = self.old_getBones(frame)
 #            plotanimation.PlotPoseAndSurface(self,surface, frame)
 #
 #            for triangle in surface.headmesh:
@@ -199,7 +207,7 @@ class Animation:
         if surface:
             bones = []
             for frame in range(self.frames):
-                bones.append(self.getBones(frame))
+                bones.append(self.old_getBones(frame))
             bones = np.asarray(bones).transpose(1,2,0)
             listofpoints = []
             for point in surface.points:
@@ -215,8 +223,7 @@ class Animation:
         """
         raise Exception('This method is no longer available, please use getBones()')
 
-
-    def getBones(self, 
+    def old_getBones(self, 
                  frame = 0, 
                  bonesPositions=[], 
                  joint=None, 
@@ -248,7 +255,7 @@ class Animation:
                 es = joint.getEndSitePosition(frame)
                 bonesPositions.append([cp[0], cp[1], cp[2], es[0], es[1], es[2]])
         for child in joint.children:
-            self.getBones(frame,bonesPositions,child, include_endsite)
+            self.old_getBones(frame,bonesPositions,child, include_endsite)
         if joint == self.root:
             return np.asarray(bonesPositions)
 
@@ -264,7 +271,7 @@ class Animation:
         for joint,i in zip(self.getlistofjoints(),range(totaljoints)):
             joints[i] = [joint.position[frame,0],joint.position[frame,1],joint.position[frame,2]]
         joints = np.asarray(joints)
-        bones = self.getBones(frame)
+        bones = self.old_getBones(frame)
 
         #Getting surface info, testing if there is frames information or just
         #the points
