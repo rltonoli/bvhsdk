@@ -28,7 +28,8 @@ def WriteBVH(animation,
              name = '_export', 
              frametime = None, 
              writeTranslation = True,
-             refTPose = True):
+             refTPose = True,
+             precision = 4,):
     """
     Create a bvh file with the motion contained in the anim.Animation object using the information contained in joint.rotation and joint.translation.
 
@@ -43,6 +44,8 @@ def WriteBVH(animation,
     :param bool writeTranslation: If set to True (default), translations (local positions) are written for every joint. Each joint will have six channels, with the first three representing X, Y, and Z translations. If set to False, only the translation (global position) for the root joint will be written.
 
     :param bool refTPose: If set to True, the first frame of the BVH file will be the input TPose reference (default). Note that the TPose reference must be set manually for each joint and stored in joint.tposetrans and joint.tposerot as in retarget.MotionRetargeting().
+
+    :param int precision: Number of decimal places to include when saving floating-point results to the bvh file. A higher precision results in larger file sizes. Default is set to 4 decimal places.
     """
     if name:
         path = pathjoin(path, name)
@@ -50,6 +53,7 @@ def WriteBVH(animation,
     depth = 0
     if frametime is None:
         frametime = animation.frametime
+    assert isinstance(precision, int) and precision >= 0, "precision must be a non-negative integer"
     with open(str.format("%s.bvh" % path), "w") as file:
         file.write('HIERARCHY\n')
         for section in ['header', 'content']:
@@ -124,7 +128,7 @@ def WriteBVH(animation,
                             line = line + [joint.tposerot[2], joint.tposerot[0], joint.tposerot[1]]
                         elif joint.order=='ZYX':
                             line = line + [joint.tposerot[2], joint.tposerot[1], joint.tposerot[0]]
-                    string = " ".join(str.format("%.2f"%number) for number in line)
+                    string = " ".join(str.format("%.{}f".format(precision)%number) for number in line)
                     file.write(string+'\n')
 
                 #Write the rest of the file
@@ -142,7 +146,7 @@ def WriteBVH(animation,
                             line = line + [joint.rotation[frame,2], joint.rotation[frame,0], joint.rotation[frame,1]]
                         elif joint.order=='ZYX':
                             line = line + [joint.rotation[frame,2], joint.rotation[frame,1], joint.rotation[frame,0]]
-                    string = " ".join(str.format("%.2f"%number) for number in line)
+                    string = " ".join(str.format("%.{}f".format(precision)%number) for number in line)
                     file.write(string+'\n')
     print('File Saved: %s' % (path+'.bvh'))
 
