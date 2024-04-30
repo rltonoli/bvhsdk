@@ -1,4 +1,4 @@
-![bvhsdk logo](logo.png)
+![bvhsdk logo](imgs/logo.png)
 
 - **Documentation:** https://bvhsdk.readthedocs.io/
 - **Github:** https://github.com/rltonoli/bvhsdk
@@ -14,7 +14,9 @@ bvhsdk is a small but versatile Python library designed for the management of BV
 
 - **Manipulation Tools:** Modify BVH animations programmatically. Use bvhsdk to implement algorithms for retargeting animations, blending motions, or smoothing trajectories.
 
-- Data Visualization (work in progress): Visualize BVH animations with a GUI tool for representations of motion data.
+- Data Visualization: Visualize BVH animations with a GUI tool for representations of motion data (work in progress). Plot animations inside Jupyter Notebook.
+
+![bvhsdk logo](imgs/previs_nb.gif)
 
 ## Use Cases
 
